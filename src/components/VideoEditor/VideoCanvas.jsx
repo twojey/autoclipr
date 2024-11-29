@@ -34,10 +34,10 @@ export const VideoCanvas = ({
   const scale = useMotionValue(1);
 
   // Constantes de zoom
-  const MIN_ZOOM = 0.2;  // 20% de la taille originale
-  const MAX_ZOOM = 3;    // 300% de la taille originale
-  const ZOOM_FACTOR = 0.2;  // Augmentation à 20% par action
-  const ZOOM_ANIMATION_DURATION = 0.05; // 50ms pour une transition très rapide
+  const MIN_ZOOM = 0.2;
+  const MAX_ZOOM = 3;
+  const ZOOM_FACTOR = 0.08; // 8% de changement par cran
+  const ZOOM_ANIMATION_DURATION = 0.1; // 100ms pour une animation fluide
 
   // Calcul des dimensions de l'overlay 9:16
   const calculateOverlayDimensions = useCallback(() => {
@@ -137,70 +137,45 @@ export const VideoCanvas = ({
     video.currentTime = currentTime;
   }, [currentTime]);
 
-  // Gestion du zoom à la molette/trackpad
-  const handleWheel = useCallback((e) => {
-    // Bloque toujours le comportement par défaut quand on est sur la vidéo
-    if (isHovering) {
+  // Gestion du zoom
+  const handleZoom = useCallback((direction) => {
+    const currentScale = scale.get();
+    const zoomFactor = direction === 'in' ? (1 + ZOOM_FACTOR) : (1 - ZOOM_FACTOR);
+    const newScale = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, currentScale * zoomFactor));
+    
+    // Animation rapide avec spring pour plus de fluidité
+    animate(scale, newScale, {
+      type: "spring",
+      stiffness: 300,
+      damping: 30,
+      mass: 0.5,
+      velocity: 100
+    });
+  }, [scale]);
+
+  // Gestion du zoom à la molette
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    let lastWheelTime = 0;
+    const WHEEL_TIMEOUT = 50; // 50ms entre chaque événement de molette
+
+    const wheelHandler = (e) => {
+      if (!isHovering) return;
       e.preventDefault();
 
-      // Si c'est un geste de pinch/zoom (trackpad)
-      if (e.ctrlKey) {
-        const currentScale = scale.get();
-        let newScale;
+      const now = Date.now();
+      if (now - lastWheelTime < WHEEL_TIMEOUT) return;
+      lastWheelTime = now;
 
-        // Sur trackpad, deltaY est inversé pour le pinch
-        const zoomMultiplier = Math.abs(e.deltaY) > 10 ? 2 : 1; // Zoom plus rapide si le geste est plus prononcé
-        if (e.deltaY < 0) {
-          newScale = currentScale * (1 + ZOOM_FACTOR * zoomMultiplier);
-        } else {
-          newScale = currentScale * (1 - ZOOM_FACTOR * zoomMultiplier);
-        }
-
-        // Application des limites de zoom
-        newScale = Math.min(Math.max(newScale, MIN_ZOOM), MAX_ZOOM);
-        animate(scale, newScale, { duration: ZOOM_ANIMATION_DURATION });
-        return;
-      }
-
-      // Gestion normale de la molette
-      const currentScale = scale.get();
-      let newScale;
-
-      // Zoom plus rapide si le deltaY est plus grand
-      const zoomMultiplier = Math.abs(e.deltaY) > 10 ? 2 : 1;
-      if (e.deltaY > 0) {
-        newScale = currentScale * (1 - ZOOM_FACTOR * zoomMultiplier);
-      } else {
-        newScale = currentScale * (1 + ZOOM_FACTOR * zoomMultiplier);
-      }
-
-      // Application des limites de zoom
-      newScale = Math.min(Math.max(newScale, MIN_ZOOM), MAX_ZOOM);
-      animate(scale, newScale, { duration: ZOOM_ANIMATION_DURATION });
-    }
-  }, [scale, isHovering]);
-
-  // Empêcher le zoom du navigateur
-  useEffect(() => {
-    const preventZoom = (e) => {
-      if (isHovering) {
-        e.preventDefault();
-      }
+      const direction = e.deltaY < 0 ? 'in' : 'out';
+      handleZoom(direction);
     };
 
-    // Gestion des événements wheel et gesturechange (pour Safari)
-    window.addEventListener('wheel', preventZoom, { passive: false });
-    window.addEventListener('gesturestart', preventZoom);
-    window.addEventListener('gesturechange', preventZoom);
-    window.addEventListener('gestureend', preventZoom);
-
-    return () => {
-      window.removeEventListener('wheel', preventZoom);
-      window.removeEventListener('gesturestart', preventZoom);
-      window.removeEventListener('gesturechange', preventZoom);
-      window.removeEventListener('gestureend', preventZoom);
-    };
-  }, [isHovering]);
+    container.addEventListener('wheel', wheelHandler, { passive: false });
+    return () => container.removeEventListener('wheel', wheelHandler);
+  }, [handleZoom, isHovering]);
 
   // Ajustement vertical (même hauteur que l'overlay 9:16)
   const handleVerticalFit = useCallback(() => {
@@ -238,24 +213,6 @@ export const VideoCanvas = ({
     animate(x, 0, { duration: 0.3 }); // Recentre horizontalement
   }, [scale, x]);
 
-  // Gestion du zoom par boutons
-  const handleZoom = useCallback((direction) => {
-    const currentScale = scale.get();
-    let newScale;
-    
-    if (direction === 'in') {
-      newScale = currentScale * (1 + ZOOM_FACTOR);
-    } else {
-      newScale = currentScale * (1 - ZOOM_FACTOR);
-    }
-    
-    // Respect des limites de zoom
-    newScale = Math.min(Math.max(newScale, MIN_ZOOM), MAX_ZOOM);
-    
-    // Animation fluide du zoom
-    animate(scale, newScale, { duration: ZOOM_ANIMATION_DURATION });
-  }, [scale]);
-
   // Gestion de la barre d'espace
   useEffect(() => {
     const handleKeyPress = (e) => {
@@ -291,7 +248,6 @@ export const VideoCanvas = ({
     <div 
       ref={containerRef} 
       className={`relative w-full h-full overflow-hidden transition-colors duration-200 ${isDragging ? 'bg-black' : 'bg-gray-900'}`}
-      onWheel={handleWheel}
       onMouseEnter={() => setIsHovering(true)}
       onMouseLeave={() => setIsHovering(false)}
     >
