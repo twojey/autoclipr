@@ -10,8 +10,11 @@ const VideoEditor = ({ videoFile, onBack }) => {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [showExport, setShowExport] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [exportProgress, setExportProgress] = useState(0);
   const [exportedVideoUrl, setExportedVideoUrl] = useState(null);
+  const [lastQuality, setLastQuality] = useState('720p');
   const [cutStart, setCutStart] = useState(0);
   const [cutEnd, setCutEnd] = useState(30);
   const videoUrlRef = useRef(null); // Add a ref to store the video URL
@@ -38,20 +41,28 @@ const VideoEditor = ({ videoFile, onBack }) => {
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, [isPlaying]);
 
-  const handleExport = async ({ quality }) => {
+  const handleExport = async (options) => {
+    // Si options est null, on réinitialise l'état pour revenir au choix de la qualité
+    if (!options) {
+      setExportedVideoUrl(null);
+      setExportProgress(0);
+      return;
+    }
+
+    const { quality } = options;
+    setLastQuality(quality);
     setIsExporting(true);
+    setExportProgress(0);
+
     try {
-      // Simuler un export pour le moment
-      // TODO: Implémenter l'export réel avec FFmpeg
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Pour le moment, on utilise juste un blob de la vidéo originale
-      const response = await fetch(videoUrlRef.current);
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-      
-      setExportedVideoUrl(url);
-      setShowExport(false);
+      // Simuler une progression
+      for (let i = 0; i <= 100; i += 10) {
+        setExportProgress(i);
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+
+      // Simuler l'export final
+      setExportedVideoUrl(URL.createObjectURL(videoFile));
     } catch (error) {
       console.error('Export failed:', error);
       // TODO: Afficher une notification d'erreur
@@ -72,12 +83,12 @@ const VideoEditor = ({ videoFile, onBack }) => {
   };
 
   // Si on a une vidéo exportée, afficher l'écran d'export
-  if (exportedVideoUrl) {
+  if (exportedVideoUrl && showPreview) {
     return (
       <ExportScreen
+        isOpen={showPreview}
+        onClose={() => setShowPreview(false)}
         videoUrl={exportedVideoUrl}
-        onBack={() => setExportedVideoUrl(null)}
-        onDownload={handleDownload}
       />
     );
   }
@@ -130,9 +141,16 @@ const VideoEditor = ({ videoFile, onBack }) => {
       {/* Modal d'export */}
       <ExportModal
         isOpen={showExport}
-        onClose={() => setShowExport(false)}
+        onClose={() => {
+          setShowExport(false);
+          setExportedVideoUrl(null);
+          setExportProgress(0);
+        }}
         onExport={handleExport}
         isExporting={isExporting}
+        progress={exportProgress}
+        previewUrl={exportedVideoUrl}
+        lastQuality={lastQuality}
       />
     </div>
   );
