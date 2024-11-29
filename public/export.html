@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Remotion Export</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: #1a1a1a;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            width: 100%;
+            text-align: center;
+        }
+        .progress {
+            width: 100%;
+            height: 4px;
+            background: #333;
+            border-radius: 2px;
+            margin: 20px 0;
+            overflow: hidden;
+        }
+        .progress-bar {
+            height: 100%;
+            background: #4CAF50;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        .status {
+            margin: 10px 0;
+            color: #888;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 20px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        button:disabled {
+            background: #666;
+            cursor: not-allowed;
+        }
+        .error {
+            color: #ff4444;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Export en cours</h1>
+        <div class="progress">
+            <div class="progress-bar" id="progress"></div>
+        </div>
+        <div class="status" id="status">Initialisation...</div>
+        <div class="error" id="error" style="display: none"></div>
+        <button id="downloadBtn" style="display: none">Télécharger la vidéo</button>
+    </div>
+
+    <script>
+        const config = JSON.parse(localStorage.getItem('remotion_config'));
+        const progressBar = document.getElementById('progress');
+        const statusText = document.getElementById('status');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const errorText = document.getElementById('error');
+
+        async function startExport() {
+            try {
+                // Créer un FormData avec la vidéo et les paramètres
+                const formData = new FormData();
+                const videoBlob = await fetch(config.inputProps.videoUrl).then(r => r.blob());
+                formData.append('video', videoBlob, 'video.mp4');
+                formData.append('startTime', config.inputProps.startTime);
+                formData.append('endTime', config.inputProps.endTime);
+
+                // Mettre à jour le statut
+                statusText.textContent = "Envoi de la vidéo...";
+                progressBar.style.width = "20%";
+
+                // Envoyer la requête d'exportation
+                const response = await fetch('http://localhost:3001/api/export', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Export failed: ${response.statusText}`);
+                }
+
+                // Mettre à jour la progression pendant le rendu
+                progressBar.style.width = "60%";
+                statusText.textContent = "Rendu de la vidéo...";
+
+                // Récupérer le blob de la vidéo
+                const videoData = await response.blob();
+                
+                // Créer une URL pour le téléchargement
+                const videoUrl = URL.createObjectURL(videoData);
+                
+                // Mettre à jour l'interface
+                progressBar.style.width = "100%";
+                statusText.textContent = "Export terminé !";
+                
+                // Configurer le bouton de téléchargement
+                downloadBtn.style.display = 'inline-block';
+                downloadBtn.onclick = () => {
+                    const a = document.createElement('a');
+                    a.href = videoUrl;
+                    a.download = 'exported-video.mp4';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(videoUrl);
+                };
+            } catch (error) {
+                console.error('Export error:', error);
+                errorText.textContent = error.message;
+                errorText.style.display = 'block';
+                statusText.textContent = "L'export a échoué";
+                progressBar.style.background = '#ff4444';
+            }
+        }
+
+        // Démarrer l'export
+        startExport();
+    </script>
+</body>
+</html>

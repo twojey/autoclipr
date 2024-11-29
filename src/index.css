@@ -1,13 +1,178 @@
-body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+@font-face {
+  font-family: 'Inter';
+  src: url('/fonts/Inter-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
 }
 
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+@font-face {
+  font-family: 'Inter';
+  src: url('/fonts/Inter-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Clash Display';
+  src: url('/fonts/ClashDisplay-Semibold.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Clash Display';
+  src: url('/fonts/ClashDisplay-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    @apply antialiased;
+  }
+
+  body {
+    @apply bg-light-background-primary text-light-text-primary transition-colors duration-300
+           dark:bg-dark-background-primary dark:text-dark-text-primary;
+  }
+
+  h1 {
+    @apply font-display text-heading-1;
+  }
+
+  h2 {
+    @apply font-display text-heading-2;
+  }
+
+  h3 {
+    @apply font-display text-heading-3;
+  }
+}
+
+@layer components {
+  /* Boutons neumorphiques */
+  .btn {
+    @apply inline-flex items-center justify-center px-6 py-3 rounded-xl font-medium
+           transition-all duration-300 transform active:scale-95;
+  }
+
+  .btn-primary {
+    @apply bg-gradient-to-br from-primary-400 to-primary-600 text-white
+           shadow-[6px_6px_12px_#b8b9be,_-6px_-6px_12px_#ffffff]
+           dark:shadow-[6px_6px_12px_#0f172a,_-6px_-6px_12px_#1e293b]
+           hover:shadow-glow hover:from-primary-300 hover:to-primary-500
+           active:shadow-neumorph-inset active:from-primary-600 active:to-primary-400;
+  }
+
+  .btn-secondary {
+    @apply bg-gradient-to-br from-accent-400 to-accent-600 text-white
+           shadow-[6px_6px_12px_#b8b9be,_-6px_-6px_12px_#ffffff]
+           dark:shadow-[6px_6px_12px_#0f172a,_-6px_-6px_12px_#1e293b]
+           hover:shadow-glow-accent hover:from-accent-300 hover:to-accent-500
+           active:shadow-neumorph-inset active:from-accent-600 active:to-accent-400;
+  }
+
+  .btn-outline {
+    @apply border-2 border-primary-500 text-primary-500
+           shadow-[6px_6px_12px_#b8b9be,_-6px_-6px_12px_#ffffff]
+           dark:shadow-[6px_6px_12px_#0f172a,_-6px_-6px_12px_#1e293b]
+           hover:shadow-glow hover:bg-primary-50 hover:border-primary-400
+           active:shadow-neumorph-inset active:bg-primary-100
+           dark:border-primary-400 dark:text-primary-400
+           dark:hover:bg-primary-900/50 dark:active:bg-primary-900;
+  }
+
+  /* Boutons icônes */
+  .btn-icon {
+    @apply p-3 rounded-xl transition-all duration-300
+           bg-light-background-elevated dark:bg-dark-background-elevated
+           shadow-[6px_6px_12px_#b8b9be,_-6px_-6px_12px_#ffffff]
+           dark:shadow-[6px_6px_12px_#0f172a,_-6px_-6px_12px_#1e293b]
+           hover:shadow-glow active:shadow-neumorph-inset
+           transform hover:scale-105 active:scale-95;
+  }
+
+  /* Inputs neumorphiques */
+  .input {
+    @apply block w-full px-6 py-3 rounded-xl border-2 transition-all duration-300
+           bg-light-background-elevated dark:bg-dark-background-elevated
+           border-light-background-tertiary dark:border-dark-background-tertiary
+           text-light-text-primary dark:text-dark-text-primary
+           placeholder-light-text-tertiary dark:placeholder-dark-text-tertiary
+           shadow-[inset_6px_6px_12px_#b8b9be,_inset_-6px_-6px_12px_#ffffff]
+           dark:shadow-[inset_6px_6px_12px_#0f172a,_inset_-6px_-6px_12px_#1e293b];
+  }
+
+  .input:focus {
+    @apply outline-none border-primary-500 shadow-glow
+           dark:border-primary-400;
+  }
+
+  /* Cards neumorphiques */
+  .card {
+    @apply bg-light-background-elevated dark:bg-dark-background-elevated
+           rounded-2xl p-8 transition-all duration-300
+           shadow-[12px_12px_24px_#b8b9be,_-12px_-12px_24px_#ffffff]
+           dark:shadow-[12px_12px_24px_#0f172a,_-12px_-12px_24px_#1e293b]
+           hover:shadow-[16px_16px_32px_#b8b9be,_-16px_-16px_32px_#ffffff]
+           dark:hover:shadow-[16px_16px_32px_#0f172a,_-16px_-16px_32px_#1e293b];
+  }
+
+  /* Loader */
+  .loader {
+    @apply relative w-12 h-12 animate-spin-slow;
+  }
+
+  .loader::before,
+  .loader::after {
+    @apply content-[''] absolute inset-0 rounded-full;
+  }
+
+  .loader::before {
+    @apply bg-gradient-to-r from-primary-500 to-accent-500 animate-pulse-glow;
+  }
+
+  .loader::after {
+    @apply bg-light-background-elevated dark:bg-dark-background-elevated m-1;
+  }
+
+  /* Page transitions */
+  .page-enter {
+    @apply animate-fade-in;
+  }
+
+  .page-exit {
+    @apply animate-fade-out;
+  }
+
+  /* Sections */
+  .section {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24;
+  }
+
+  .section-sm {
+    @apply max-w-3xl mx-auto px-4 sm:px-6 py-12 sm:py-16;
+  }
+}
+
+/* Scrollbar personnalisé */
+::-webkit-scrollbar {
+  @apply w-2;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-light-background-tertiary dark:bg-dark-background-tertiary rounded-full;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-gradient-to-b from-primary-400 to-accent-400 rounded-full;
 }
