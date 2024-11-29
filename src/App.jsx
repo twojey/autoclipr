@@ -1,22 +1,28 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import React, { useState } from 'react';
 import { HomePage } from './pages/HomePage';
-import { VideoEditor } from './components/VideoEditor/VideoEditor';
-import { ThemeProvider } from './context/ThemeContext';
+import VideoEditor from './components/VideoEditor/VideoEditor';
+import Header from './components/Header/Header';
 
-const App = () => {
+function App() {
+  const [selectedVideo, setSelectedVideo] = useState(null);
+
+  const handleLogoClick = () => {
+    setSelectedVideo(null);
+  };
+
   return (
-    <ThemeProvider>
-      <Router>
-        <div className="min-h-screen bg-light-background-primary dark:bg-dark-background-primary text-light-text-primary dark:text-dark-text-primary transition-colors duration-300">
-          <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/editor" element={<VideoEditor />} />
-          </Routes>
-        </div>
-      </Router>
-    </ThemeProvider>
+    <div className="min-h-screen bg-light-background-primary dark:bg-dark-background-primary text-light-text-primary dark:text-dark-text-primary transition-colors duration-300">
+      <Header onLogoClick={handleLogoClick} />
+      
+      <main className="pt-16"> {/* Ajout de padding-top pour compenser le header fixe */}
+        {selectedVideo ? (
+          <VideoEditor videoFile={selectedVideo} onBack={() => setSelectedVideo(null)} />
+        ) : (
+          <HomePage onVideoSelect={setSelectedVideo} />
+        )}
+      </main>
+    </div>
   );
-};
+}
 
 export default App;

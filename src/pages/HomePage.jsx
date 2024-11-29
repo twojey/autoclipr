@@ -1,28 +1,79 @@
-import React from 'react';
-import { VideoImporter } from '../components/VideoImporter';
-import { Header } from '../components/Header/Header';
+import React, { useCallback } from 'react';
+import { useDropzone } from 'react-dropzone';
+import { motion } from 'framer-motion';
+import { Card } from '../components/ui/Card';
+import { Button } from '../components/ui/Button';
+import { PageTransition } from '../components/ui/PageTransition';
+import { FilmIcon } from '@heroicons/react/24/outline';
 
-const HomePage = () => {
+export const HomePage = ({ onVideoSelect }) => {
+  const onDrop = useCallback((acceptedFiles) => {
+    if (acceptedFiles?.length > 0) {
+      onVideoSelect(acceptedFiles[0]);
+    }
+  }, [onVideoSelect]);
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: {
+      'video/*': ['.mp4', '.mov', '.avi', '.mkv']
+    },
+    maxFiles: 1
+  });
+
   return (
-    <div className="min-h-screen flex flex-col bg-light-background-primary dark:bg-dark-background-primary">
-      <Header />
-      
-      {/* Contenu centré verticalement et horizontalement */}
-      <div className="flex-grow flex items-center justify-center px-4">
-        <div className="w-full max-w-3xl text-center">
-          {/* Titre plus petit */}
-          <h1 className="text-3xl font-bold mb-8 text-light-text-primary dark:text-dark-text-primary">
-            Éditeur de Vidéo Simple et Puissant
-          </h1>
-          
-          {/* Zone d'import */}
-          <div className="w-full">
-            <VideoImporter />
-          </div>
+    <PageTransition>
+      <div className="h-screen flex flex-col items-center justify-center p-4 gap-6 overflow-hidden">
+        {/* Titre avec animation */}
+        <motion.h1 
+          className="text-2xl md:text-4xl font-bold text-center bg-gradient-to-r from-primary-500 to-accent-500 text-transparent bg-clip-text"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+        >
+          Create clips in seconds for free
+        </motion.h1>
+
+        {/* Zone de glisser-déposer */}
+        <div {...getRootProps()}>
+          <Card 
+            variant="interactive" 
+            className={`w-full max-w-2xl p-8 flex flex-col items-center justify-center gap-4 cursor-pointer
+              ${isDragActive ? 'border-2 border-primary-500 shadow-glow' : ''}`}
+          >
+            <input {...getInputProps()} />
+            
+            <motion.div
+              className="w-20 h-20 rounded-full bg-gradient-to-br from-primary-400 to-accent-500 flex items-center justify-center"
+              animate={{
+                scale: isDragActive ? 1.1 : 1,
+                boxShadow: isDragActive 
+                  ? '0 0 30px rgba(var(--primary-rgb), 0.3)' 
+                  : '0 0 20px rgba(var(--primary-rgb), 0.2)'
+              }}
+              transition={{ duration: 0.3 }}
+            >
+              <FilmIcon className="w-10 h-10 text-white" />
+            </motion.div>
+
+            <div className="text-center space-y-2">
+              <p className="text-xl font-medium">
+                {isDragActive ? 'Drop your video here' : 'Drag & drop your video here'}
+              </p>
+              <p className="text-light-text-secondary dark:text-dark-text-secondary">
+                or
+              </p>
+              <Button variant="primary" size="lg" onClick={(e) => e.stopPropagation()}>
+                Choose a file
+              </Button>
+            </div>
+
+            <p className="text-sm text-light-text-tertiary dark:text-dark-text-tertiary">
+              Supports MP4, MOV, AVI, MKV
+            </p>
+          </Card>
         </div>
       </div>
-    </div>
+    </PageTransition>
   );
 };
-
-export { HomePage };

@@ -412,11 +412,12 @@ export const VideoTimeline = ({
         {/* Timeline */}
         <div
           ref={timelineRef}
-          className="relative w-full h-12 bg-gray-800 rounded cursor-default overflow-hidden"
+          className="relative w-full h-12 bg-gray-800 rounded cursor-pointer overflow-hidden"
+          onClick={handleTimelineClick}
           onWheel={handleWheel}
         >
           {/* Graduations */}
-          <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute inset-0">
             {getTimelineGraduations().map(({ time, position, isMain, showText }) => (
               <div 
                 key={time} 
@@ -442,46 +443,35 @@ export const VideoTimeline = ({
             ))}
           </div>
 
-          {/* Zone cliquable de la timeline */}
-          <div 
-            className="absolute inset-0"
-            onClick={handleTimelineClick}
-            style={{ cursor: isDraggingHandle || isDraggingZone || isDraggingScroll ? 'default' : 'pointer' }}
-          />
-
           {/* Zone de cut */}
           <div
             className="absolute h-full bg-blue-500/30"
             style={{
               left: timeToPixels(cutStart),
-              width: timeToPixels(cutEnd - cutStart),
-              pointerEvents: 'none'
+              width: timeToPixels(cutEnd - cutStart)
             }}
           >
             {/* Barre gauche avec rectangle */}
             <div
               className="absolute left-0 top-0 bottom-0 w-0.5 bg-blue-500 group cursor-ew-resize"
-              style={{ pointerEvents: 'auto' }}
               onMouseDown={(e) => handleHandleMouseDown(e, 'start')}
             >
               <div className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-6 bg-blue-500 
-                rounded-sm group-hover:bg-blue-400 transition-colors pointer-events-none" />
+                rounded-sm group-hover:bg-blue-400 transition-colors" />
             </div>
 
             {/* Barre droite avec rectangle */}
             <div
               className="absolute right-0 top-0 bottom-0 w-0.5 bg-blue-500 group cursor-ew-resize"
-              style={{ pointerEvents: 'auto' }}
               onMouseDown={(e) => handleHandleMouseDown(e, 'end')}
             >
               <div className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-6 bg-blue-500 
-                rounded-sm group-hover:bg-blue-400 transition-colors pointer-events-none" />
+                rounded-sm group-hover:bg-blue-400 transition-colors" />
             </div>
 
             {/* Zone centrale */}
             <div
               className="absolute left-0.5 right-0.5 top-0 bottom-0 cursor-grab active:cursor-grabbing"
-              style={{ pointerEvents: 'auto' }}
               onMouseDown={handleZoneMouseDown}
             />
           </div>
@@ -499,9 +489,8 @@ export const VideoTimeline = ({
             <div
               ref={scrollTrackRef}
               className="absolute bottom-0 left-0 right-0 h-2 bg-gray-700/50"
-              style={{ pointerEvents: 'auto' }}
               onClick={(e) => {
-                e.stopPropagation();
+                e.stopPropagation(); // Empêche la propagation vers la timeline
                 handleScrollTrackClick(e);
               }}
             >
@@ -511,13 +500,9 @@ export const VideoTimeline = ({
                 style={{
                   left: `${(scrollPosition / getMaxScroll()) * 100}%`,
                   width: `${(getViewportWidth() / getZoomedWidth()) * 100}%`,
-                  minWidth: '20px',
-                  pointerEvents: 'auto'
+                  minWidth: '20px'
                 }}
-                onMouseDown={(e) => {
-                  e.stopPropagation();
-                  handleScrollMouseDown(e);
-                }}
+                onMouseDown={handleScrollMouseDown}
               />
             </div>
           )}

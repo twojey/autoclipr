@@ -3,11 +3,8 @@ import { BellIcon } from '@heroicons/react/24/outline';
 import { motion } from 'framer-motion';
 import { ThemeToggle } from '../ThemeToggle';
 import { Button } from '../ui/Button';
-import { useNavigate } from 'react-router-dom';
 
-export const Header = () => {
-  const navigate = useNavigate();
-
+const Header = ({ onLogoClick }) => {
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-light-background-elevated dark:bg-dark-background-elevated border-b border-light-background-tertiary dark:border-dark-background-tertiary backdrop-blur-sm bg-opacity-80 dark:bg-opacity-80">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -19,7 +16,7 @@ export const Header = () => {
             whileTap={{ scale: 0.98 }}
           >
             <button 
-              onClick={() => navigate('/')}
+              onClick={onLogoClick}
               className="flex items-center gap-3 focus:outline-none"
             >
               <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center shadow-glow">
@@ -48,3 +45,5 @@ export const Header = () => {
     </header>
   );
 };
+
+export default Header;
