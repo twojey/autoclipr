@@ -27,13 +27,15 @@ export const ExportScreen = ({ videoUrl, onBack, onDownload }) => {
 
       {/* Contenu principal */}
       <div className="flex-1 flex items-center justify-center p-4">
-        <div className="w-full max-w-4xl aspect-video bg-black rounded-lg overflow-hidden">
-          <video
-            src={videoUrl}
-            className="w-full h-full"
-            controls
-            autoPlay
-          />
+        <div className="w-full max-w-4xl mx-auto p-4 flex flex-col items-center">
+          {/* Lecteur vidéo */}
+          <div className="w-full aspect-video max-h-[70vh]">
+            <video
+              src={videoUrl}
+              className="w-full h-full object-contain bg-black/50 rounded-lg"
+              controls
+            />
+          </div>
         </div>
       </div>
     </div>

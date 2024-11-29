@@ -83,10 +83,10 @@ const VideoEditor = ({ videoFile, onBack }) => {
   }
 
   return (
-    <div className="flex flex-col w-full h-[calc(100vh-64px)] bg-light-background-primary dark:bg-dark-background-primary overflow-hidden">
+    <div className="h-full bg-gradient-to-tl from-gray-100 via-blue-100 to-blue-200 dark:from-gray-950 dark:via-purple-900 dark:to-purple-800 grid place-items-center">
       {/* Section d'édition principale */}
-      <div className="w-full h-full max-w-[800px] mx-auto px-4 py-4 flex flex-col justify-center">
-        <div className="w-full border border-light-border dark:border-dark-border rounded-lg p-4 bg-light-background-secondary dark:bg-dark-background-secondary">
+      <div className="w-full max-w-[800px] px-4 flex flex-col -mt-8">
+        <div className="w-full rounded-xl backdrop-blur-xl bg-white/40 dark:bg-black/40 border border-white/40 dark:border-white/10 shadow-lg p-4">
           {/* Canvas vidéo avec overlay d'export */}
           <div className="relative aspect-video" style={{ maxHeight: 'calc(100% - 100px)' }}>
             <VideoCanvas

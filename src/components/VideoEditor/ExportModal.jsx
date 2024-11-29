@@ -4,22 +4,22 @@ import { Button } from '../ui/Button';
 
 const QUALITY_OPTIONS = [
   {
-    id: '1080p',
-    label: 'Haute qualité (1080p)',
-    description: 'Recommandé pour un partage sur les réseaux sociaux',
-    resolution: '1920x1080'
-  },
-  {
     id: '720p',
-    label: 'Qualité moyenne (720p)',
-    description: 'Bon compromis taille/qualité',
+    label: 'Qualité basse (720p)',
+    description: 'Fichier plus léger, qualité réduite',
     resolution: '1280x720'
   },
   {
-    id: '480p',
-    label: 'Qualité basse (480p)',
-    description: 'Fichier plus léger, qualité réduite',
-    resolution: '854x480'
+    id: '1080p',
+    label: 'Qualité moyenne (1080p)',
+    description: 'Bon compromis taille/qualité',
+    resolution: '1920x1080'
+  },
+  {
+    id: '1440p',
+    label: 'Haute qualité (1440p)',
+    description: 'Recommandé pour un partage sur les réseaux sociaux',
+    resolution: '2560x1440'
   }
 ];
 
@@ -42,7 +42,7 @@ export const ExportModal = ({ isOpen, onClose, onExport, isExporting }) => {
       
       {/* Contenu de la modale */}
       <div className="absolute inset-0 flex items-center justify-center p-4">
-        <div className="relative bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full shadow-xl">
+        <div className="relative bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full shadow-xl max-h-[90vh] overflow-y-auto">
           {/* En-tête */}
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-semibold">
