@@ -69,9 +69,18 @@ export const ExportModal = ({ isOpen, onClose, onExport, isExporting, progress =
                   transition={{ duration: 0.3 }}
                 />
               </div>
-              <p className="text-center text-sm text-gray-500 dark:text-gray-400">
-                Export en cours : {progress}%
-              </p>
+              <div className="flex flex-col items-center gap-4">
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Export en cours : {progress}%
+                </p>
+                <Button 
+                  variant="destructive" 
+                  onClick={onClose}
+                  size="md"
+                >
+                  Annuler l'export
+                </Button>
+              </div>
             </div>
           ) : previewUrl ? (
             <div className="space-y-4">

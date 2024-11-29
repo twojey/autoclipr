@@ -36,8 +36,7 @@ export const VideoCanvas = ({
   // Constantes de zoom
   const MIN_ZOOM = 0.2;
   const MAX_ZOOM = 3;
-  const ZOOM_FACTOR = 0.08; // 8% de changement par cran
-  const ZOOM_ANIMATION_DURATION = 0.1; // 100ms pour une animation fluide
+  const ZOOM_STEP = 0.05; // Légèrement plus grand pour une meilleure réactivité
 
   // Calcul des dimensions de l'overlay 9:16
   const calculateOverlayDimensions = useCallback(() => {
@@ -140,17 +139,22 @@ export const VideoCanvas = ({
   // Gestion du zoom
   const handleZoom = useCallback((direction) => {
     const currentScale = scale.get();
-    const zoomFactor = direction === 'in' ? (1 + ZOOM_FACTOR) : (1 - ZOOM_FACTOR);
-    const newScale = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, currentScale * zoomFactor));
+    let newScale;
+
+    // Ajustement du pas en fonction de l'échelle actuelle
+    const adjustedStep = ZOOM_STEP * Math.max(1, currentScale);
+
+    if (direction === 'in') {
+      newScale = currentScale + adjustedStep;
+    } else {
+      newScale = currentScale - adjustedStep;
+    }
+
+    // Limites de zoom
+    newScale = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, newScale));
     
-    // Animation rapide avec spring pour plus de fluidité
-    animate(scale, newScale, {
-      type: "spring",
-      stiffness: 300,
-      damping: 30,
-      mass: 0.5,
-      velocity: 100
-    });
+    // Set direct pour une réponse immédiate
+    scale.set(newScale);
   }, [scale]);
 
   // Gestion du zoom à la molette
@@ -158,16 +162,9 @@ export const VideoCanvas = ({
     const container = containerRef.current;
     if (!container) return;
 
-    let lastWheelTime = 0;
-    const WHEEL_TIMEOUT = 50; // 50ms entre chaque événement de molette
-
     const wheelHandler = (e) => {
       if (!isHovering) return;
       e.preventDefault();
-
-      const now = Date.now();
-      if (now - lastWheelTime < WHEEL_TIMEOUT) return;
-      lastWheelTime = now;
 
       const direction = e.deltaY < 0 ? 'in' : 'out';
       handleZoom(direction);
@@ -239,8 +236,12 @@ export const VideoCanvas = ({
   };
 
   const handleVideoClick = (e) => {
-    if (!justDragged) {
-      onTogglePlay?.(e);
+    // Ne rien faire si on vient de drag
+    if (justDragged) return;
+    
+    // Ne pas déclencher le play/pause lors d'un clic sur la vidéo
+    if (e.target === videoRef.current) {
+      e.stopPropagation();
     }
   };
 
@@ -293,20 +294,21 @@ export const VideoCanvas = ({
       {/* Bouton play/pause au hover */}
       {isHovering && !isDragging && (
         <div 
-          className={`absolute inset-0 flex items-center justify-center pointer-events-none transition-opacity duration-200 ${
-            isHovering && !isDragging ? 'opacity-100' : 'opacity-0'
-          }`}
+          className="absolute inset-0 flex items-center justify-center pointer-events-none"
         >
-          <div 
-            className="p-4 rounded-full bg-black/50 backdrop-blur-sm hover:bg-black/60 transition-colors cursor-pointer pointer-events-auto"
-            onClick={handleVideoClick}
+          <button 
+            className="p-4 rounded-full bg-black/50 backdrop-blur-sm hover:bg-black/60 transition-colors pointer-events-auto"
+            onClick={(e) => {
+              e.stopPropagation();
+              onTogglePlay?.(e);
+            }}
           >
             {isPlaying ? (
               <PauseIcon className="w-12 h-12 text-white" />
             ) : (
               <PlayIcon className="w-12 h-12 text-white" />
             )}
-          </div>
+          </button>
         </div>
       )}
 

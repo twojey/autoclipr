@@ -11,6 +11,7 @@ const buttonVariants = cva(
         secondary: "bg-light-background-elevated hover:bg-light-background-hover dark:bg-dark-background-elevated dark:hover:bg-dark-background-hover text-light-text-primary dark:text-dark-text-primary",
         outline: "border border-light-border dark:border-dark-border bg-transparent hover:bg-light-background-hover dark:hover:bg-dark-background-hover text-light-text-primary dark:text-dark-text-primary",
         ghost: "hover:bg-light-background-hover dark:hover:bg-dark-background-hover text-light-text-primary dark:text-dark-text-primary",
+        destructive: "bg-red-500 text-white hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700",
       },
       size: {
         sm: "text-sm px-3 py-1.5",
