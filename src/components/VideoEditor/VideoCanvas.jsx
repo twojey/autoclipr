@@ -330,7 +330,6 @@ export const VideoCanvas = ({
         onDragEnd={handleDragEnd}
         onTimeUpdate={(e) => onTimeUpdate?.(e.target.currentTime)}
         onDurationChange={(e) => onDurationChange?.(e.target.duration)}
-        muted
         playsInline
         onClick={handleVideoClick}
       />
