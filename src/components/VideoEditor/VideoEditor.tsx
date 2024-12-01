@@ -15,10 +15,31 @@ const VideoEditor: React.FC<VideoEditorProps> = ({ videoFile, onBack }) => {
   const [cutStart, setCutStart] = useState(0);
   const [cutEnd, setCutEnd] = useState(0);
 
+  // Gestionnaire de la barre d'espace
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      // Ignorer si l'utilisateur tape dans un champ de texte
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+      
+      // Empêcher le défilement de la page avec la barre d'espace
+      if (e.code === 'Space') {
+        e.preventDefault();
+        setIsPlaying(prev => !prev);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => {
+      window.removeEventListener('keydown', handleKeyPress);
+    };
+  }, []);
+
   // Mettre à jour cutEnd une fois que la durée est connue
   useEffect(() => {
     if (duration > 0 && cutEnd === 0) {
-      setCutEnd(Math.min(30, duration)); // 30 secondes par défaut ou la durée totale si plus courte
+      setCutEnd(Math.min(30, duration));
     }
   }, [duration, cutEnd]);
 

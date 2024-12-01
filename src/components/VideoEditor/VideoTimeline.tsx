@@ -159,9 +159,28 @@ export const VideoTimeline: React.FC<VideoTimelineProps> = ({
       const newScale = direction === 'in' 
         ? Math.min(prevScale + ZOOM_STEP, MAX_ZOOM)
         : Math.max(prevScale - ZOOM_STEP, MIN_ZOOM);
+
+      // Calculer la nouvelle position de défilement pour centrer sur la tête de lecture
+      if (timelineRef.current) {
+        const timelineWidth = timelineRef.current.clientWidth;
+        const currentPixelPosition = (currentTime / duration) * timelineWidth;
+        
+        // Position actuelle relative à la vue
+        const currentViewPosition = currentPixelPosition * prevScale - scrollPosition;
+        
+        // Position souhaitée (centrée) dans la nouvelle échelle
+        const targetPixelPosition = currentPixelPosition * newScale;
+        const targetScrollPosition = targetPixelPosition - (timelineWidth / 2);
+        
+        // Mettre à jour la position de défilement
+        requestAnimationFrame(() => {
+          handleScroll(Math.max(0, targetScrollPosition));
+        });
+      }
+
       return newScale;
     });
-  }, []);
+  }, [currentTime, duration, scrollPosition, handleScroll]);
 
   // Handle horizontal scroll
   const handleWheel = useCallback((e: WheelEvent) => {
@@ -173,6 +192,7 @@ export const VideoTimeline: React.FC<VideoTimelineProps> = ({
       const scrollAmount = e.deltaX || e.deltaY;
       handleScroll(scrollPosition + scrollAmount * 0.5);
     } else {
+      // Pour le zoom avec la molette, on centre toujours sur la tête de lecture
       const zoomDirection = e.deltaY > 0 ? 'out' : 'in';
       handleZoom(zoomDirection);
     }

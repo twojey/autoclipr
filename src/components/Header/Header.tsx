@@ -1,12 +1,16 @@
 import React from 'react';
 import { BellIcon } from '@heroicons/react/24/outline';
-import { motion } from 'framer-motion';
+import { SunIcon, MoonIcon } from '@heroicons/react/24/outline';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useTheme } from '../../hooks/useTheme';
 
 interface HeaderProps {
   onLogoClick: () => void;
 }
 
 const Header: React.FC<HeaderProps> = ({ onLogoClick }) => {
+  const { isDark, toggleTheme } = useTheme();
+
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 backdrop-blur-sm bg-opacity-80 dark:bg-opacity-80">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -32,26 +36,29 @@ const Header: React.FC<HeaderProps> = ({ onLogoClick }) => {
           
           {/* Boutons de droite */}
           <div className="flex items-center gap-2">
-            <button
+            <motion.button
+              onClick={toggleTheme}
               className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-              onClick={() => {
-                document.documentElement.classList.toggle('dark');
-              }}
+              aria-label={isDark ? "Passer au thème clair" : "Passer au thème sombre"}
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
             >
-              <svg
-                className="w-5 h-5 text-gray-500 dark:text-gray-400"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"
-                />
-              </svg>
-            </button>
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={isDark ? 'dark' : 'light'}
+                  initial={{ scale: 0, rotate: -180, opacity: 0 }}
+                  animate={{ scale: 1, rotate: 0, opacity: 1 }}
+                  exit={{ scale: 0, rotate: 180, opacity: 0 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  {isDark ? (
+                    <SunIcon className="w-5 h-5 text-gray-200" />
+                  ) : (
+                    <MoonIcon className="w-5 h-5 text-gray-800" />
+                  )}
+                </motion.div>
+              </AnimatePresence>
+            </motion.button>
             <button
               className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors relative"
               onClick={() => {}}
