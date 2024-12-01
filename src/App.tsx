@@ -1,24 +1,29 @@
-import React from 'react';
-import logo from './logo.svg';
+import React, { useState } from 'react';
 import './App.css';
+import { useFFmpeg } from './hooks/useFFmpeg';
+import Header from './components/Header/Header';
+import { HomePage } from './pages/HomePage';
+import VideoEditor from './components/VideoEditor/VideoEditor';
 
 function App() {
+  const { ffmpeg, isLoaded, error } = useFFmpeg();
+  const [selectedVideo, setSelectedVideo] = useState<File | null>(null);
+
+  const handleLogoClick = () => {
+    setSelectedVideo(null);
+  };
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+    <div className="h-screen flex flex-col bg-light-background-primary dark:bg-dark-background-primary text-light-text-primary dark:text-dark-text-primary transition-colors duration-300 overflow-hidden">
+      <Header onLogoClick={handleLogoClick} />
+      
+      <main className="flex-1 pt-16">
+        {selectedVideo ? (
+          <VideoEditor videoFile={selectedVideo} onBack={() => setSelectedVideo(null)} />
+        ) : (
+          <HomePage onVideoSelect={setSelectedVideo} />
+        )}
+      </main>
     </div>
   );
 }
