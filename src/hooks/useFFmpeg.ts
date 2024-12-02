@@ -33,9 +33,11 @@ export const useFFmpeg = () => {
         });
 
         // Vérification des fichiers FFmpeg
+        const baseURL = '/ffmpeg';
+        
         try {
-          const coreResponse = await fetch('/ffmpeg/ffmpeg-core.js');
-          const wasmResponse = await fetch('/ffmpeg/ffmpeg-core.wasm');
+          const coreResponse = await fetch(`${baseURL}/ffmpeg-core.js`);
+          const wasmResponse = await fetch(`${baseURL}/ffmpeg-core.wasm`);
 
           if (!coreResponse.ok || !wasmResponse.ok) {
             throw new Error(`Fichiers FFmpeg inaccessibles (Core: ${coreResponse.status}, WASM: ${wasmResponse.status})`);
@@ -46,24 +48,16 @@ export const useFFmpeg = () => {
           throw error;
         }
 
-        // Préparation des URLs
-        logger.info('Préparation des ressources...');
-        const baseURL = '/ffmpeg';
-        const coreURL = await toBlobURL(
-          `${baseURL}/ffmpeg-core.js`,
-          'text/javascript'
-        );
-        const wasmURL = await toBlobURL(
-          `${baseURL}/ffmpeg-core.wasm`,
-          'application/wasm'
-        );
-
         // Chargement de FFmpeg
         try {
+          const coreURL = await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript');
+          const wasmURL = await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm');
+
           await instance.load({
             coreURL,
             wasmURL
           });
+          
           logger.success('FFmpeg chargé avec succès');
           setFFmpeg(instance);
           setFfmpegLoaded(true);

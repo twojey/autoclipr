@@ -1,0 +1,301 @@
+import { FFmpeg } from '@ffmpeg/ffmpeg';
+import { toBlobURL } from '@ffmpeg/util';
+import { FrameRenderer } from './FrameRenderer';
+
+interface ExportOptions {
+  startTime: number;
+  endTime: number;
+  fps?: number;
+  onProgress?: (progress: number) => void;
+}
+
+export class ExportController {
+  private static instance: ExportController | null = null;
+  private ffmpeg: FFmpeg | null = null;
+  private readonly CHUNK_SIZE = 30;
+  private frameRenderer: FrameRenderer | null = null;
+  private overlayDimensions: { width: number; height: number };
+  private videoTransform: { x: number; y: number; scale: number };
+
+  private constructor() {
+    this.overlayDimensions = { width: 0, height: 0 };
+    this.videoTransform = { x: 0, y: 0, scale: 1 };
+  }
+
+  public static getInstance(): ExportController {
+    if (!ExportController.instance) {
+      ExportController.instance = new ExportController();
+    }
+    return ExportController.instance;
+  }
+
+  public setFFmpeg(ffmpeg: FFmpeg) {
+    this.ffmpeg = ffmpeg;
+  }
+
+  public setOverlayDimensions(dimensions: { width: number; height: number }) {
+    if (dimensions.width <= 0 || dimensions.height <= 0) {
+      throw new Error(`Invalid overlay dimensions: ${dimensions.width}x${dimensions.height}`);
+    }
+    this.overlayDimensions = dimensions;
+    this.initFrameRenderer();
+  }
+
+  public setVideoTransform(transform: { x: number; y: number; scale: number }) {
+    this.videoTransform = transform;
+  }
+
+  private initFrameRenderer() {
+    this.frameRenderer = new FrameRenderer({
+      width: 1080,
+      height: 1920,
+      overlay: {
+        width: this.overlayDimensions.width,
+        height: this.overlayDimensions.height
+      }
+    });
+  }
+
+  private async seekVideo(video: HTMLVideoElement, time: number): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const handleSeeked = () => {
+        video.removeEventListener('seeked', handleSeeked);
+        video.removeEventListener('error', handleError);
+        resolve();
+      };
+
+      const handleError = (error: Event) => {
+        video.removeEventListener('seeked', handleSeeked);
+        video.removeEventListener('error', handleError);
+        reject(new Error('Failed to seek video: ' + error.type));
+      };
+
+      video.addEventListener('seeked', handleSeeked);
+      video.addEventListener('error', handleError);
+      
+      video.currentTime = time;
+    });
+  }
+
+  private async processFrame(
+    video: HTMLVideoElement,
+    time: number,
+    frameNumber: number
+  ): Promise<void> {
+    if (!this.frameRenderer || !this.ffmpeg) {
+      throw new Error('FrameRenderer or FFmpeg not initialized.');
+    }
+
+    try {
+      await this.seekVideo(video, time);
+      const frame = await this.frameRenderer.renderFrame(
+        video,
+        time,
+        this.videoTransform
+      );
+
+      const frameData = new Uint8Array(await frame.arrayBuffer());
+      const filename = `frame_${frameNumber.toString().padStart(6, '0')}.jpg`;
+      await this.ffmpeg.writeFile(filename, frameData);
+    } catch (error) {
+      console.error(`Error processing frame at ${time}s:`, error);
+      throw error;
+    }
+  }
+
+  private async encodeVideo(
+    startFrame: number,
+    numFrames: number,
+    fps: number,
+    outputFile: string,
+    audioFile: string | null = null
+  ): Promise<void> {
+    if (!this.ffmpeg) throw new Error('FFmpeg not initialized');
+
+    const inputFile = 'concat.txt';
+    
+    try {
+      // Créer le fichier de concaténation
+      const fileList = Array.from({ length: numFrames }, (_, i) => {
+        const frameNum = startFrame + i;
+        return `file 'frame_${frameNum.toString().padStart(6, '0')}.jpg'`;
+      }).join('\n');
+      
+      await this.ffmpeg.writeFile(inputFile, fileList);
+
+      // Préparer la commande FFmpeg de base pour la vidéo
+      const ffmpegCommand = [
+        '-f', 'concat',
+        '-safe', '0',
+        '-i', inputFile
+      ];
+
+      // Ajouter l'entrée audio si disponible
+      if (audioFile) {
+        ffmpegCommand.push('-i', audioFile);
+      }
+
+      // Ajouter les options de sortie
+      ffmpegCommand.push(
+        '-c:v', 'mpeg4',
+        '-q:v', '2',
+        '-pix_fmt', 'yuv420p',
+        '-r', fps.toString()
+      );
+
+      // Ajouter les options audio si nécessaire
+      if (audioFile) {
+        ffmpegCommand.push(
+          '-c:a', 'aac',
+          '-strict', 'experimental',
+          '-map', '0:v:0',
+          '-map', '1:a:0'
+        );
+      }
+
+      // Ajouter le fichier de sortie
+      ffmpegCommand.push(outputFile);
+
+      console.log('FFmpeg command:', ffmpegCommand.join(' '));
+
+      // Encoder la vidéo
+      await this.ffmpeg.exec(ffmpegCommand);
+
+      // Nettoyer le fichier de concaténation
+      await this.ffmpeg.deleteFile(inputFile);
+    } catch (error) {
+      console.error('Error encoding video:', error);
+      throw error;
+    }
+  }
+
+  private async extractAudio(
+    video: HTMLVideoElement,
+    startTime: number,
+    endTime: number
+  ): Promise<string | null> {
+    if (!this.ffmpeg) throw new Error('FFmpeg not initialized');
+    
+    try {
+      // Obtenir les données de la vidéo
+      const videoBlob = await fetch(video.src).then(r => r.blob());
+      const videoData = new Uint8Array(await videoBlob.arrayBuffer());
+      const inputFile = 'input.mp4';
+      const audioFile = 'audio.m4a';
+
+      // Écrire le fichier vidéo
+      await this.ffmpeg.writeFile(inputFile, videoData);
+
+      // Extraire l'audio avec le bon timing
+      await this.ffmpeg.exec([
+        '-i', inputFile,
+        '-ss', startTime.toString(),
+        '-t', (endTime - startTime).toString(),
+        '-vn',
+        '-c:a', 'aac',
+        '-strict', 'experimental',
+        '-b:a', '192k',
+        audioFile
+      ]);
+
+      // Vérifier si le fichier audio a été créé
+      try {
+        await this.ffmpeg.readFile(audioFile);
+        console.log('Audio file created successfully');
+        // Nettoyer le fichier d'entrée
+        await this.ffmpeg.deleteFile(inputFile);
+        return audioFile;
+      } catch (error) {
+        console.error('Audio extraction failed:', error);
+        return null;
+      }
+    } catch (error) {
+      console.error('Error extracting audio:', error);
+      return null;
+    }
+  }
+
+  private async cleanupFrames(startFrame: number, numFrames: number) {
+    if (!this.ffmpeg) return;
+    
+    for (let i = 0; i < numFrames; i++) {
+      const frameNum = startFrame + i;
+      const filename = `frame_${frameNum.toString().padStart(6, '0')}.jpg`;
+      try {
+        await this.ffmpeg.deleteFile(filename);
+      } catch (error) {
+        console.warn(`Failed to delete ${filename}:`, error);
+      }
+    }
+  }
+
+  public async exportVideo(
+    video: HTMLVideoElement,
+    options: ExportOptions
+  ): Promise<Blob> {
+    if (!this.ffmpeg || !this.frameRenderer) {
+      throw new Error('FFmpeg or FrameRenderer not initialized');
+    }
+
+    const { startTime, endTime, fps = 30, onProgress } = options;
+    const duration = endTime - startTime;
+    const totalFrames = Math.ceil(duration * fps);
+    const outputFile = 'output.mp4';
+    let audioFile: string | null = null;
+
+    console.log(`Starting export: ${duration}s at ${fps}fps (${totalFrames} frames)`);
+    console.log(`Time range: ${startTime}s to ${endTime}s`);
+    
+    try {
+      // 1. Extraire l'audio
+      console.log('Extracting audio...');
+      audioFile = await this.extractAudio(video, startTime, endTime);
+      if (audioFile) {
+        console.log('Audio extracted successfully');
+      } else {
+        console.log('No audio to extract or extraction failed');
+      }
+
+      // 2. Générer toutes les frames
+      for (let frameIndex = 0; frameIndex < totalFrames; frameIndex++) {
+        const time = startTime + (frameIndex / fps);
+        console.log(`Processing frame ${frameIndex + 1}/${totalFrames} at ${time.toFixed(3)}s`);
+        
+        await this.processFrame(video, time, frameIndex);
+        onProgress?.((frameIndex + 1) / totalFrames);
+      }
+
+      // 3. Encoder la vidéo complète avec l'audio
+      console.log('Encoding video...');
+      await this.encodeVideo(0, totalFrames, fps, outputFile, audioFile);
+
+      // 4. Lire le fichier de sortie
+      console.log('Reading output file...');
+      const data = await this.ffmpeg.readFile(outputFile);
+      
+      // 5. Nettoyer
+      console.log('Cleaning up...');
+      await this.cleanupFrames(0, totalFrames);
+      await this.ffmpeg.deleteFile(outputFile);
+      if (audioFile) {
+        await this.ffmpeg.deleteFile(audioFile);
+      }
+      
+      console.log('Export complete!');
+      return new Blob([data], { type: 'video/mp4' });
+    } catch (error) {
+      console.error('Export error:', error);
+      // Tenter de nettoyer en cas d'erreur
+      try {
+        await this.cleanupFrames(0, totalFrames);
+        await this.ffmpeg.deleteFile(outputFile);
+        if (audioFile) {
+          await this.ffmpeg.deleteFile(audioFile);
+        }
+      } catch (cleanupError) {
+        console.error('Cleanup error:', cleanupError);
+      }
+      throw error;
+    }
+  }
+}

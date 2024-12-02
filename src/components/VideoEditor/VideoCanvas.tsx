@@ -5,25 +5,39 @@ import {
   PauseIcon,
   MagnifyingGlassIcon,
   ArrowsUpDownIcon,
-  ArrowsRightLeftIcon
+  ArrowsRightLeftIcon,
+  ArrowDownTrayIcon
 } from '@heroicons/react/24/solid';
+import { ExportDialog } from './ExportDialog';
 
 interface VideoCanvasProps {
   videoFile: File;
   isPlaying: boolean;
   currentTime: number;
-  onTimeUpdate?: (time: number) => void;
-  onDurationChange?: (duration: number) => void;
-  onTogglePlay?: () => void;
+  duration: number;
+  cutStart: number;
+  cutEnd: number;
+  onTimeUpdate: (time: number) => void;
+  onDurationChange: (duration: number) => void;
+  onTogglePlay: () => void;
+  onVideoRef?: (element: HTMLVideoElement | null) => void;
+  onTransformChange?: (transform: { x: number; y: number; scale: number }) => void;
+  onExportDialogOpen?: (open: boolean) => void;
 }
 
 export const VideoCanvas: React.FC<VideoCanvasProps> = ({ 
   videoFile, 
   isPlaying, 
-  currentTime, 
+  currentTime,
+  duration,
+  cutStart,
+  cutEnd,
   onTimeUpdate, 
   onDurationChange,
-  onTogglePlay 
+  onTogglePlay,
+  onVideoRef,
+  onTransformChange,
+  onExportDialogOpen
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
@@ -32,6 +46,7 @@ export const VideoCanvas: React.FC<VideoCanvasProps> = ({
   const [isDragging, setIsDragging] = useState(false);
   const [isHovering, setIsHovering] = useState(false);
   const [overlayDimensions, setOverlayDimensions] = useState({ width: 0, height: 0 });
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
   const videoUrlRef = useRef<string | null>(null);
   const [justDragged, setJustDragged] = useState(false);
 
@@ -45,26 +60,48 @@ export const VideoCanvas: React.FC<VideoCanvasProps> = ({
   const MAX_ZOOM = 3;
   const ZOOM_STEP = 0.05;
 
-  // Calcul des dimensions de l'overlay 9:16
-  const calculateOverlayDimensions = useCallback(() => {
-    if (!containerRef.current) return { width: 0, height: 0 };
-    const container = containerRef.current;
-    const containerHeight = container.clientHeight;
-    const overlayHeight = containerHeight * 0.8;
-    const overlayWidth = (overlayHeight * 9) / 16;
-    return { width: overlayWidth, height: overlayHeight };
-  }, []);
-
-  // Mise à jour des dimensions lors du redimensionnement
+  // Calculer les dimensions de l'overlay en fonction de la hauteur du conteneur
   useEffect(() => {
-    const updateDimensions = () => {
-      setOverlayDimensions(calculateOverlayDimensions());
+    const updateOverlayDimensions = () => {
+      if (containerRef.current) {
+        const containerHeight = containerRef.current.clientHeight;
+        const containerWidth = containerRef.current.clientWidth;
+        
+        // Calculer la largeur basée sur le ratio 9:16
+        const targetWidth = (containerHeight * 9) / 16;
+        
+        // Si la largeur calculée est trop grande, utiliser la largeur du conteneur
+        if (targetWidth > containerWidth) {
+          const height = (containerWidth * 16) / 9;
+          setOverlayDimensions({ width: containerWidth, height });
+        } else {
+          setOverlayDimensions({ width: targetWidth, height: containerHeight });
+        }
+      }
     };
 
-    updateDimensions();
-    window.addEventListener('resize', updateDimensions);
-    return () => window.removeEventListener('resize', updateDimensions);
-  }, [calculateOverlayDimensions]);
+    // Observer les changements de taille du conteneur
+    const resizeObserver = new ResizeObserver(updateOverlayDimensions);
+    if (containerRef.current) {
+      resizeObserver.observe(containerRef.current);
+    }
+
+    // Mise à jour initiale
+    updateOverlayDimensions();
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, []);
+
+  // Mise à jour des transformations
+  useEffect(() => {
+    onTransformChange?.({
+      x: x.get(),
+      y: y.get(),
+      scale: scale.get()
+    });
+  }, [x, y, scale, onTransformChange]);
 
   // Création de l'URL de la vidéo
   useEffect(() => {
@@ -140,6 +177,15 @@ export const VideoCanvas: React.FC<VideoCanvasProps> = ({
     if (!video || !video.duration || !Number.isFinite(currentTime) || Math.abs(video.currentTime - currentTime) < 0.1) return;
     video.currentTime = currentTime;
   }, [currentTime]);
+
+  // Mettre à jour les transformations quand elles changent
+  useEffect(() => {
+    onTransformChange?.({
+      x: x.get(),
+      y: y.get(),
+      scale: scale.get()
+    });
+  }, [x, y, scale, onTransformChange]);
 
   // Gestion du zoom
   const handleZoom = useCallback((direction: 'in' | 'out') => {
@@ -221,15 +267,21 @@ export const VideoCanvas: React.FC<VideoCanvasProps> = ({
     }
   };
 
+  useEffect(() => {
+    if (videoRef.current) {
+      onVideoRef?.(videoRef.current);
+    }
+  }, [onVideoRef]);
+
   return (
     <div 
       ref={containerRef} 
-      className={`relative w-full h-full overflow-hidden transition-colors duration-200 ${isDragging ? 'bg-black' : 'bg-gray-900'}`}
+      className="relative w-full h-full overflow-hidden transition-colors duration-200 bg-gray-900"
       onMouseEnter={() => setIsHovering(true)}
       onMouseLeave={() => setIsHovering(false)}
     >
       {/* Vidéo de fond floutée */}
-      <div className={`absolute inset-0 transition-opacity duration-200 ${isDragging ? 'opacity-0' : 'opacity-50'}`}>
+      <div className="absolute inset-0 transition-opacity duration-200 opacity-50">
         <video
           ref={backgroundVideoRef}
           src={videoUrlRef.current || undefined}
@@ -261,8 +313,8 @@ export const VideoCanvas: React.FC<VideoCanvasProps> = ({
         dragMomentum={false}
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
-        onTimeUpdate={(e) => onTimeUpdate?.((e.target as HTMLVideoElement).currentTime)}
-        onDurationChange={(e) => onDurationChange?.((e.target as HTMLVideoElement).duration)}
+        onTimeUpdate={(e) => onTimeUpdate((e.target as HTMLVideoElement).currentTime)}
+        onDurationChange={(e) => onDurationChange((e.target as HTMLVideoElement).duration)}
         playsInline
         onClick={handleVideoClick}
       />
@@ -288,6 +340,36 @@ export const VideoCanvas: React.FC<VideoCanvasProps> = ({
         </div>
       )}
 
+      {/* Contrôles vidéo */}
+      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex items-center gap-4 bg-black/50 rounded-lg p-2">
+        <button
+          onClick={onTogglePlay}
+          className="p-2 text-white hover:text-primary-500 transition-colors"
+        >
+          {isPlaying ? (
+            <PauseIcon className="w-6 h-6" />
+          ) : (
+            <PlayIcon className="w-6 h-6" />
+          )}
+        </button>
+
+        {/* Bouton d'export */}
+        <button
+          onClick={() => {
+            // Force une mise à jour des dimensions avant d'ouvrir le dialogue
+            if (overlayRef.current) {
+              const { width, height } = overlayRef.current.getBoundingClientRect();
+              setOverlayDimensions({ width, height });
+            }
+            setExportDialogOpen(true);
+            onExportDialogOpen?.(true);
+          }}
+          className="p-2 text-white hover:text-primary-500 transition-colors"
+        >
+          <ArrowDownTrayIcon className="w-6 h-6" />
+        </button>
+      </div>
+
       {/* Overlay 9:16 */}
       <div 
         ref={overlayRef}
@@ -295,11 +377,11 @@ export const VideoCanvas: React.FC<VideoCanvasProps> = ({
         style={{
           width: overlayDimensions.width,
           height: overlayDimensions.height,
+          aspectRatio: '9/16'
         }}
       >
         {/* Grille 3x3 */}
-        <div className={`absolute inset-0 transition-opacity duration-200
-          ${isDragging ? 'opacity-100' : 'opacity-0'}`}>
+        <div className={`absolute inset-0 transition-opacity duration-200 ${isDragging ? 'opacity-100' : 'opacity-0'}`}>
           {/* Lignes verticales */}
           <div className="absolute left-1/3 top-0 w-[2px] h-full bg-white/50 shadow-[0_0_8px_rgba(255,255,255,0.5)]" />
           <div className="absolute left-2/3 top-0 w-[2px] h-full bg-white/50 shadow-[0_0_8px_rgba(255,255,255,0.5)]" />
@@ -348,6 +430,20 @@ export const VideoCanvas: React.FC<VideoCanvasProps> = ({
           <span className="absolute text-white font-bold text-sm right-1 bottom-1">-</span>
         </button>
       </div>
+
+      {/* Dialog d'export */}
+      <ExportDialog
+        open={exportDialogOpen}
+        onClose={() => {
+          setExportDialogOpen(false);
+          onExportDialogOpen?.(false);
+        }}
+        videoRef={videoRef}
+        overlayDimensions={overlayDimensions}
+        videoTransform={{ x: x.get(), y: y.get(), scale: scale.get() }}
+        startTime={cutStart}
+        endTime={cutEnd}
+      />
     </div>
   );
 };

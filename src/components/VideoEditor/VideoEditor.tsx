@@ -1,7 +1,8 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { ArrowDownTrayIcon } from '@heroicons/react/24/outline';
 import { VideoCanvas } from './VideoCanvas';
 import { VideoTimeline } from './VideoTimeline';
+import { ExportDialog } from './ExportDialog';
 
 interface VideoEditorProps {
   videoFile: File;
@@ -14,6 +15,10 @@ const VideoEditor: React.FC<VideoEditorProps> = ({ videoFile, onBack }) => {
   const [duration, setDuration] = useState(0);
   const [cutStart, setCutStart] = useState(0);
   const [cutEnd, setCutEnd] = useState(0);
+  const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
+  const [overlayDimensions, setOverlayDimensions] = useState({ width: 0, height: 0 });
+  const [videoTransform, setVideoTransform] = useState({ x: 0, y: 0, scale: 0 });
+  const videoRef = useRef<HTMLVideoElement | null>(null);
 
   // Gestionnaire de la barre d'espace
   useEffect(() => {
@@ -43,6 +48,18 @@ const VideoEditor: React.FC<VideoEditorProps> = ({ videoFile, onBack }) => {
     }
   }, [duration, cutEnd]);
 
+  const handleTransformChange = useCallback((transform: { x: number; y: number; scale: number }) => {
+    setVideoTransform(transform);
+  }, []);
+
+  const handleExportDialogOpen = useCallback((open: boolean) => {
+    setIsExportDialogOpen(open);
+  }, []);
+
+  const handleVideoRef = (element: HTMLVideoElement | null) => {
+    videoRef.current = element;
+  };
+
   return (
     <div className="h-full bg-gradient-to-tl from-gray-100 via-blue-100 to-blue-200 dark:from-gray-950 dark:via-purple-900 dark:to-purple-800 grid place-items-center">
       <div className="w-full max-w-[800px] px-4 flex flex-col -mt-8">
@@ -56,6 +73,7 @@ const VideoEditor: React.FC<VideoEditorProps> = ({ videoFile, onBack }) => {
               ← Retour
             </button>
             <button
+              onClick={() => setIsExportDialogOpen(true)}
               className="flex items-center gap-2 px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors"
             >
               <ArrowDownTrayIcon className="w-5 h-5" />
@@ -69,9 +87,15 @@ const VideoEditor: React.FC<VideoEditorProps> = ({ videoFile, onBack }) => {
               videoFile={videoFile}
               isPlaying={isPlaying}
               currentTime={currentTime}
+              duration={duration}
+              cutStart={cutStart}
+              cutEnd={cutEnd}
               onTimeUpdate={setCurrentTime}
               onDurationChange={setDuration}
               onTogglePlay={() => setIsPlaying(!isPlaying)}
+              onVideoRef={handleVideoRef}
+              onTransformChange={handleTransformChange}
+              onExportDialogOpen={handleExportDialogOpen}
             />
           </div>
 
@@ -91,6 +115,15 @@ const VideoEditor: React.FC<VideoEditorProps> = ({ videoFile, onBack }) => {
           </div>
         </div>
       </div>
+
+      {/* Dialog d'export */}
+      <ExportDialog
+        open={isExportDialogOpen}
+        onClose={() => setIsExportDialogOpen(false)}
+        videoRef={videoRef}
+        overlayDimensions={overlayDimensions}
+        videoTransform={videoTransform}
+      />
     </div>
   );
 };
