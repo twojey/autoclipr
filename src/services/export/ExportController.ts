@@ -9,6 +9,10 @@ interface ExportOptions {
   onProgress?: (progress: number) => void;
 }
 
+interface MozVideoElement extends HTMLVideoElement {
+  mozDecodedFrames?: number;
+}
+
 export class ExportController {
   private static instance: ExportController | null = null;
   private ffmpeg: FFmpeg | null = null;
@@ -230,6 +234,53 @@ export class ExportController {
     }
   }
 
+  private async getVideoFPS(video: HTMLVideoElement): Promise<number> {
+    const mozVideo = video as MozVideoElement;
+    if (mozVideo.mozDecodedFrames !== undefined) {
+      // Firefox specific
+      await new Promise(resolve => setTimeout(resolve, 100)); // Petit délai pour laisser Firefox calculer les frames
+      return mozVideo.mozDecodedFrames / video.currentTime;
+    }
+    
+    // Pour les autres navigateurs, on utilise une approche basée sur requestVideoFrameCallback
+    // si disponible, sinon on utilise une valeur par défaut
+    if ('requestVideoFrameCallback' in HTMLVideoElement.prototype) {
+      return new Promise((resolve) => {
+        let lastTime: number | null = null;
+        let frames = 0;
+        let rafId: number;
+
+        const frameCallback = (now: DOMHighResTimeStamp, metadata: any) => {
+          if (lastTime === null) {
+            lastTime = now;
+          } else {
+            frames++;
+            const elapsed = (now - lastTime) / 1000; // Convertir en secondes
+            if (elapsed >= 1) { // Mesurer sur 1 seconde
+              const fps = Math.round(frames / elapsed);
+              cancelAnimationFrame(rafId);
+              video.currentTime = 0; // Remettre la vidéo au début
+              resolve(fps);
+              return;
+            }
+          }
+          rafId = requestAnimationFrame(() => {
+            (video as any).requestVideoFrameCallback(frameCallback);
+          });
+        };
+
+        // Démarrer la mesure
+        video.currentTime = 0;
+        video.muted = true;
+        video.play();
+        (video as any).requestVideoFrameCallback(frameCallback);
+      });
+    }
+
+    // Valeur par défaut si aucune méthode n'est disponible
+    return Promise.resolve(30);
+  }
+
   public async exportVideo(
     video: HTMLVideoElement,
     backgroundVideo: HTMLVideoElement | null,
@@ -239,8 +290,9 @@ export class ExportController {
       throw new Error('FFmpeg or FrameRenderer not initialized');
     }
 
-    const { startTime, endTime, fps = 30, onProgress } = options;
+    const { startTime, endTime, onProgress } = options;
     const duration = endTime - startTime;
+    const fps = await this.getVideoFPS(video);
     const totalFrames = Math.ceil(duration * fps);
     const outputFile = 'output.mp4';
     let audioFile: string | null = null;
