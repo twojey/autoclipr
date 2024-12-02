@@ -19,6 +19,7 @@ const VideoEditor: React.FC<VideoEditorProps> = ({ videoFile, onBack }) => {
   const [overlayDimensions, setOverlayDimensions] = useState({ width: 0, height: 0 });
   const [videoTransform, setVideoTransform] = useState({ x: 0, y: 0, scale: 0 });
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const backgroundVideoRef = useRef<HTMLVideoElement | null>(null);
 
   // Gestionnaire de la barre d'espace
   useEffect(() => {
@@ -121,6 +122,7 @@ const VideoEditor: React.FC<VideoEditorProps> = ({ videoFile, onBack }) => {
         open={isExportDialogOpen}
         onClose={() => setIsExportDialogOpen(false)}
         videoRef={videoRef}
+        backgroundVideoRef={backgroundVideoRef}
         overlayDimensions={overlayDimensions}
         videoTransform={videoTransform}
       />

@@ -8,6 +8,7 @@ interface ExportDialogProps {
   open: boolean;
   onClose: () => void;
   videoRef: React.RefObject<HTMLVideoElement>;
+  backgroundVideoRef: React.RefObject<HTMLVideoElement>;
   overlayDimensions: { width: number; height: number };
   videoTransform: { x: number; y: number; scale: number };
   startTime?: number;
@@ -18,6 +19,7 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
   open,
   onClose,
   videoRef,
+  backgroundVideoRef,
   overlayDimensions,
   videoTransform,
   startTime = 0,
@@ -48,12 +50,16 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
     try {
       console.log(`Exporting video from ${startTime}s to ${endTime}s`);
       
-      const blob = await exportController.exportVideo(videoRef.current, {
-        startTime,
-        endTime: typeof endTime === 'number' ? endTime : duration,
-        fps: 30,
-        onProgress: (p) => setProgress(p)
-      });
+      const blob = await exportController.exportVideo(
+        videoRef.current,
+        backgroundVideoRef.current,
+        {
+          startTime,
+          endTime: typeof endTime === 'number' ? endTime : duration,
+          fps: 30,
+          onProgress: (p) => setProgress(p)
+        }
+      );
 
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -70,7 +76,7 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
     } finally {
       setIsExporting(false);
     }
-  }, [videoRef, duration, exportController, onClose, startTime, endTime, isLoaded]);
+  }, [videoRef, backgroundVideoRef, duration, exportController, onClose, startTime, endTime, isLoaded]);
 
   return (
     <Dialog

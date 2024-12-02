@@ -439,6 +439,7 @@ export const VideoCanvas: React.FC<VideoCanvasProps> = ({
           onExportDialogOpen?.(false);
         }}
         videoRef={videoRef}
+        backgroundVideoRef={backgroundVideoRef}
         overlayDimensions={overlayDimensions}
         videoTransform={{ x: x.get(), y: y.get(), scale: scale.get() }}
         startTime={cutStart}

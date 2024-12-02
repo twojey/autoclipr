@@ -79,6 +79,7 @@ export class ExportController {
 
   private async processFrame(
     video: HTMLVideoElement,
+    backgroundVideo: HTMLVideoElement | null,
     time: number,
     frameNumber: number
   ): Promise<void> {
@@ -87,9 +88,9 @@ export class ExportController {
     }
 
     try {
-      await this.seekVideo(video, time);
       const frame = await this.frameRenderer.renderFrame(
         video,
+        backgroundVideo,
         time,
         this.videoTransform
       );
@@ -231,6 +232,7 @@ export class ExportController {
 
   public async exportVideo(
     video: HTMLVideoElement,
+    backgroundVideo: HTMLVideoElement | null,
     options: ExportOptions
   ): Promise<Blob> {
     if (!this.ffmpeg || !this.frameRenderer) {
@@ -261,7 +263,7 @@ export class ExportController {
         const time = startTime + (frameIndex / fps);
         console.log(`Processing frame ${frameIndex + 1}/${totalFrames} at ${time.toFixed(3)}s`);
         
-        await this.processFrame(video, time, frameIndex);
+        await this.processFrame(video, backgroundVideo, time, frameIndex);
         onProgress?.((frameIndex + 1) / totalFrames);
       }
 

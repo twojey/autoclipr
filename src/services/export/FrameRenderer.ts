@@ -44,19 +44,9 @@ export class FrameRenderer {
     this.exportCtx = exportCtx;
   }
 
-  public async renderFrame(
-    video: HTMLVideoElement,
-    time: number,
-    transform: { x: number; y: number; scale: number }
-  ): Promise<Blob> {
-    // Validation des dimensions de la vidéo
-    if (video.videoWidth === 0 || video.videoHeight === 0) {
-      throw new Error(`Invalid video dimensions: ${video.videoWidth}x${video.videoHeight}`);
-    }
-
-    // 1. Positionner la vidéo au bon timestamp
+  private async seekVideo(video: HTMLVideoElement, time: number): Promise<void> {
     video.currentTime = time;
-    await new Promise<void>((resolve, reject) => {
+    return new Promise<void>((resolve, reject) => {
       const onError = () => {
         reject(new Error('Failed to seek video'));
         video.removeEventListener('error', onError);
@@ -69,33 +59,94 @@ export class FrameRenderer {
       
       video.addEventListener('error', onError, { once: true });
     });
+  }
+
+  private calculateVideoDimensions(
+    video: HTMLVideoElement,
+    containerWidth: number,
+    containerHeight: number
+  ): { width: number; height: number; x: number; y: number } {
+    const videoRatio = video.videoWidth / video.videoHeight;
+    const containerRatio = containerWidth / containerHeight;
+    
+    let width: number;
+    let height: number;
+    
+    if (videoRatio > containerRatio) {
+      // La vidéo est plus large que le container
+      height = containerHeight;
+      width = height * videoRatio;
+    } else {
+      // La vidéo est plus haute que le container
+      width = containerWidth;
+      height = width / videoRatio;
+    }
+
+    // Centrer la vidéo
+    const x = (containerWidth - width) / 2;
+    const y = (containerHeight - height) / 2;
+
+    return { width, height, x, y };
+  }
+
+  public async renderFrame(
+    video: HTMLVideoElement,
+    backgroundVideo: HTMLVideoElement | null,
+    time: number,
+    transform: { x: number; y: number; scale: number }
+  ): Promise<Blob> {
+    // Validation des dimensions de la vidéo
+    if (video.videoWidth === 0 || video.videoHeight === 0) {
+      throw new Error(`Invalid video dimensions: ${video.videoWidth}x${video.videoHeight}`);
+    }
+
+    // 1. Positionner les vidéos au bon timestamp
+    await Promise.all([
+      this.seekVideo(video, time),
+      backgroundVideo ? this.seekVideo(backgroundVideo, time) : Promise.resolve()
+    ]);
 
     // 2. Nettoyer les canvas
     this.workCtx.clearRect(0, 0, this.workCanvas.width, this.workCanvas.height);
     this.exportCtx.clearRect(0, 0, this.exportCanvas.width, this.exportCanvas.height);
 
-    // 3. Calculer les dimensions initiales de la vidéo (comme object-contain)
-    const videoRatio = video.videoWidth / video.videoHeight;
-    const overlayRatio = this.options.overlay.width / this.options.overlay.height;
-    
-    let initialWidth: number;
-    let initialHeight: number;
-    
-    if (videoRatio > overlayRatio) {
-      // La vidéo est plus large que l'overlay
-      initialHeight = this.options.overlay.height;
-      initialWidth = initialHeight * videoRatio;
-    } else {
-      // La vidéo est plus haute que l'overlay
-      initialWidth = this.options.overlay.width;
-      initialHeight = initialWidth / videoRatio;
+    // 3. Si une vidéo de background est fournie, la dessiner d'abord
+    if (backgroundVideo && backgroundVideo.videoWidth > 0 && backgroundVideo.videoHeight > 0) {
+      const bgDimensions = this.calculateVideoDimensions(
+        backgroundVideo,
+        this.options.overlay.width,
+        this.options.overlay.height
+      );
+
+      // Créer un canvas temporaire pour le flou
+      const blurCanvas = document.createElement('canvas');
+      blurCanvas.width = this.workCanvas.width;
+      blurCanvas.height = this.workCanvas.height;
+      const blurCtx = blurCanvas.getContext('2d', { willReadFrequently: true });
+      
+      if (!blurCtx) {
+        throw new Error('Failed to get blur canvas context');
+      }
+
+      // Dessiner la vidéo de background sur le canvas temporaire
+      blurCtx.filter = 'blur(10px)';  // Ajuster la valeur du flou selon vos besoins
+      blurCtx.drawImage(
+        backgroundVideo,
+        bgDimensions.x,
+        bgDimensions.y,
+        bgDimensions.width,
+        bgDimensions.height
+      );
+
+      // Copier le résultat flouté sur le canvas de travail
+      this.workCtx.drawImage(blurCanvas, 0, 0);
     }
 
-    // 4. Calculer la position initiale (centrée)
-    const initialX = (this.options.overlay.width - initialWidth) / 2;
-    const initialY = (this.options.overlay.height - initialHeight) / 2;
+    // 4. Calculer les dimensions de la vidéo principale
+    const { width: initialWidth, height: initialHeight, x: initialX, y: initialY } = 
+      this.calculateVideoDimensions(video, this.options.overlay.width, this.options.overlay.height);
 
-    // 5. Appliquer les transformations
+    // 5. Appliquer les transformations pour la vidéo principale
     this.workCtx.save();
 
     // Déplacer au centre de l'overlay
@@ -110,7 +161,7 @@ export class FrameRenderer {
     // Retourner au point d'origine
     this.workCtx.translate(-this.options.overlay.width / 2, -this.options.overlay.height / 2);
 
-    // 6. Dessiner la vidéo
+    // 6. Dessiner la vidéo principale
     this.workCtx.drawImage(
       video,
       initialX,
