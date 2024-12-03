@@ -352,7 +352,7 @@ export const VideoCanvas: React.FC<VideoCanvasProps> = ({
           setExportDialogOpen(true);
           onExportDialogOpen?.(true);
         }}
-        className="absolute top-4 right-4 px-4 py-2 bg-blue-500/30 backdrop-blur-md rounded-lg text-white hover:bg-blue-500/40 transition-all duration-300 flex items-center gap-2 border border-white/20 shadow-lg"
+        className="absolute top-4 right-4 px-4 py-2 bg-blue-500/70 backdrop-blur-md rounded-lg text-white hover:bg-blue-800/80 transition-all duration-300 flex items-center gap-2 border border-white/20 shadow-lg"
       >
         <ArrowDownTrayIcon className="w-5 h-5" />
         <span className="text-sm font-medium">Export</span>

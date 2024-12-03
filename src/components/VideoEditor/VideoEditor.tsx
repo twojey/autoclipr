@@ -65,31 +65,6 @@ const VideoEditor: React.FC<VideoEditorProps> = ({ videoFile, onBack }) => {
     <div className="h-full bg-gradient-to-tl from-gray-100 via-blue-100 to-blue-200 dark:from-gray-950 dark:via-purple-900 dark:to-purple-800 grid place-items-center">
       <div className="w-full max-w-[800px] px-4 flex flex-col -mt-8">
         <div className="w-full rounded-xl backdrop-blur-xl bg-white/40 dark:bg-black/40 border border-white/40 dark:border-white/10 shadow-lg p-4">
-          {/* Contrôles de navigation */}
-          <div className="flex justify-between items-center mb-4">
-            <button
-              onClick={onBack}
-              className="text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
-            >
-              ← Retour
-            </button>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setIsExportDialogOpen(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
-              >
-                <span>New</span>
-              </button>
-              <button
-                onClick={() => setIsExportDialogOpen(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors"
-              >
-                <ArrowDownTrayIcon className="w-5 h-5" />
-                <span>Exporter</span>
-              </button>
-            </div>
-          </div>
-
           {/* Aperçu vidéo */}
           <div className="relative aspect-video rounded-lg overflow-hidden bg-black mb-4">
             <VideoCanvas
