@@ -340,35 +340,23 @@ export const VideoCanvas: React.FC<VideoCanvasProps> = ({
         </div>
       )}
 
-      {/* Contrôles vidéo */}
-      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex items-center gap-4 bg-black/50 rounded-lg p-2">
-        <button
-          onClick={onTogglePlay}
-          className="p-2 text-white hover:text-primary-500 transition-colors"
-        >
-          {isPlaying ? (
-            <PauseIcon className="w-6 h-6" />
-          ) : (
-            <PlayIcon className="w-6 h-6" />
-          )}
-        </button>
 
-        {/* Bouton d'export */}
-        <button
-          onClick={() => {
-            // Force une mise à jour des dimensions avant d'ouvrir le dialogue
-            if (overlayRef.current) {
-              const { width, height } = overlayRef.current.getBoundingClientRect();
-              setOverlayDimensions({ width, height });
-            }
-            setExportDialogOpen(true);
-            onExportDialogOpen?.(true);
-          }}
-          className="p-2 text-white hover:text-primary-500 transition-colors"
-        >
-          <ArrowDownTrayIcon className="w-6 h-6" />
-        </button>
-      </div>
+
+      {/* Bouton d'export en haut à droite */}
+      <button
+        onClick={() => {
+          if (overlayRef.current) {
+            const { width, height } = overlayRef.current.getBoundingClientRect();
+            setOverlayDimensions({ width, height });
+          }
+          setExportDialogOpen(true);
+          onExportDialogOpen?.(true);
+        }}
+        className="absolute top-4 right-4 px-4 py-2 bg-blue-500/30 backdrop-blur-md rounded-lg text-white hover:bg-blue-500/40 transition-all duration-300 flex items-center gap-2 border border-white/20 shadow-lg"
+      >
+        <ArrowDownTrayIcon className="w-5 h-5" />
+        <span className="text-sm font-medium">Export</span>
+      </button>
 
       {/* Overlay 9:16 */}
       <div 

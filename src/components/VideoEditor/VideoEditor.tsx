@@ -73,13 +73,21 @@ const VideoEditor: React.FC<VideoEditorProps> = ({ videoFile, onBack }) => {
             >
               ← Retour
             </button>
-            <button
-              onClick={() => setIsExportDialogOpen(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors"
-            >
-              <ArrowDownTrayIcon className="w-5 h-5" />
-              <span>Exporter</span>
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setIsExportDialogOpen(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+              >
+                <span>New</span>
+              </button>
+              <button
+                onClick={() => setIsExportDialogOpen(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors"
+              >
+                <ArrowDownTrayIcon className="w-5 h-5" />
+                <span>Exporter</span>
+              </button>
+            </div>
           </div>
 
           {/* Aperçu vidéo */}
@@ -117,15 +125,18 @@ const VideoEditor: React.FC<VideoEditorProps> = ({ videoFile, onBack }) => {
         </div>
       </div>
 
-      {/* Dialog d'export */}
-      <ExportDialog
-        open={isExportDialogOpen}
-        onClose={() => setIsExportDialogOpen(false)}
-        videoRef={videoRef}
-        backgroundVideoRef={backgroundVideoRef}
-        overlayDimensions={overlayDimensions}
-        videoTransform={videoTransform}
-      />
+      {isExportDialogOpen && (
+        <ExportDialog
+          open={isExportDialogOpen}
+          onClose={() => setIsExportDialogOpen(false)}
+          videoRef={videoRef}
+          backgroundVideoRef={backgroundVideoRef}
+          overlayDimensions={overlayDimensions}
+          videoTransform={videoTransform}
+          startTime={cutStart}
+          endTime={cutEnd}
+        />
+      )}
     </div>
   );
 };
