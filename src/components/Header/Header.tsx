@@ -26,10 +26,10 @@ const Header: React.FC<HeaderProps> = ({ onLogoClick }) => {
               className="flex items-center gap-3 focus:outline-none"
             >
               <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center shadow-lg">
-                <span className="text-white font-bold text-lg">A</span>
+                <span className="text-white font-bold text-lg">H</span>
               </div>
               <span className="text-xl font-bold bg-gradient-to-r from-blue-500 to-purple-500 text-transparent bg-clip-text">
-                Autoclipr
+                Heyddit
               </span>
             </button>
           </motion.div>

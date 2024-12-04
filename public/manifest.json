@@ -1,6 +1,6 @@
 {
-  "short_name": "React App",
-  "name": "Create React App Sample",
+  "short_name": "Heyddit",
+  "name": "Heyddit - Video Editor",
   "icons": [
     {
       "src": "favicon.ico",

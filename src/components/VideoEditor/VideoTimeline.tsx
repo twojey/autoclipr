@@ -13,8 +13,8 @@ import { Button } from '../ui/Button';
 const INITIAL_CUT_DURATION = 30; // 30 seconds
 const MAX_DURATION = 120; // 2 minutes
 const MIN_ZOOM = 0.5;
-const MAX_ZOOM = 4;
-const ZOOM_STEP = 0.5;
+const MAX_ZOOM = 10; // Augmenté de 4 à 10
+const ZOOM_STEP = 1.2; // Augmenté de 0.5 à 1.2
 const MIN_CLIP_DURATION = 3; // Minimum duration in seconds
 const MIN_THUMB_WIDTH = 50; // Largeur minimale de l'ascenseur en pixels
 
