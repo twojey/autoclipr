@@ -52,7 +52,7 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
       controller.setFFmpeg(ffmpeg);
       controller.setOverlayDimensions({
         width: Math.min(selectedQuality.resolution, overlayDimensions.width),
-        height: Math.min(selectedQuality.resolution * (overlayDimensions.height / overlayDimensions.width), overlayDimensions.height)
+        height: Math.min(selectedQuality.resolution * (overlayDimensions.height / overlayDimensions.width), overlayDimensions.height),
       });
       controller.setVideoTransform(videoTransform);
       setExportController(controller);
@@ -88,6 +88,14 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
 
+      // Mettre en pause les vidéos
+      if (videoRef.current) {
+        videoRef.current.pause();
+      }
+      if (backgroundVideoRef.current) {
+        backgroundVideoRef.current.pause();
+      }
+
       onClose();
     } catch (error) {
       console.error('Export failed:', error);
@@ -96,36 +104,50 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
     }
   }, [videoRef, backgroundVideoRef, duration, exportController, onClose, startTime, endTime, isLoaded]);
 
+  // Gestionnaire de fermeture du modal
+  const handleClose = useCallback(() => {
+    if (!isExporting) {
+      // Mettre en pause les vidéos à la fermeture manuelle
+      if (videoRef.current) {
+        videoRef.current.pause();
+      }
+      if (backgroundVideoRef.current) {
+        backgroundVideoRef.current.pause();
+      }
+      onClose();
+    }
+  }, [isExporting, videoRef, backgroundVideoRef, onClose]);
+
   return (
     <Dialog
       open={open}
-      onClose={() => {
-        if (!isExporting) onClose();
-      }}
+      onClose={handleClose}
       className="relative z-50"
     >
-      <div className="fixed inset-0 bg-black/30 dark:bg-white/10" aria-hidden="true" />
+      {/* Overlay with blur and dark effect */}
+      <div
+        className="fixed inset-0 bg-black/30 dark:bg-black/50 backdrop-blur-sm"
+        aria-hidden="true"
+      />
 
+      {/* Dialog content */}
       <div className="fixed inset-0 flex items-center justify-center p-4">
-        <Dialog.Panel className="mx-auto max-w-md rounded-lg bg-white dark:bg-gray-800 p-6 shadow-xl w-full">
+        <Dialog.Panel 
+          className={`mx-auto rounded-lg bg-white dark:bg-gray-800 p-6 shadow-xl transition-all duration-300 ${
+            isExporting ? 'max-w-sm w-full' : 'max-w-md w-full'
+          }`}
+        >
           <Dialog.Title className="text-xl font-medium mb-4 text-gray-900 dark:text-white">
-            {isExporting ? 'Exporting video...' : 'Export video'}
+            Export video
           </Dialog.Title>
 
-          {isExporting ? (
-            <div className="space-y-4">
-              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
-                <div
-                  className="bg-blue-600 h-2.5 rounded-full transition-all duration-300"
-                  style={{ width: `${progress * 100}%` }}
-                />
-              </div>
-              <p className="text-sm text-gray-600 dark:text-gray-300">
-                Progress: {Math.round(progress * 100)}%
-              </p>
-            </div>
-          ) : (
-            <>
+          <div className="relative">
+            {/* Export options */}
+            <div
+              className={`transition-all duration-300 ${
+                isExporting ? 'opacity-0 scale-95' : 'opacity-100 scale-100'
+              }`}
+            >
               <RadioGroup value={selectedQuality} onChange={setSelectedQuality} className="mt-4">
                 <RadioGroup.Label className="sr-only">Export quality</RadioGroup.Label>
                 <div className="space-y-2">
@@ -136,10 +158,10 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
                       className={({ checked }) =>
                         `${
                           checked
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-600'
+                            ? 'border-2 border-blue-600 bg-blue-50 dark:bg-blue-900/20'
+                            : 'border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700'
                         }
-                        relative flex cursor-pointer rounded-lg px-4 py-3 shadow-md focus:outline-none`
+                        relative flex cursor-pointer rounded-lg px-4 py-3 shadow-sm focus:outline-none`
                       }
                     >
                       {({ checked }) => (
@@ -149,7 +171,7 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
                               <RadioGroup.Label
                                 as="p"
                                 className={`font-medium ${
-                                  checked ? 'text-white' : 'text-gray-900 dark:text-white'
+                                  checked ? 'text-blue-600 dark:text-blue-400' : 'text-gray-900 dark:text-white'
                                 }`}
                               >
                                 {option.name} ({option.label})
@@ -157,7 +179,7 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
                               <RadioGroup.Description
                                 as="span"
                                 className={`inline ${
-                                  checked ? 'text-white' : 'text-gray-500 dark:text-gray-300'
+                                  checked ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-300'
                                 }`}
                               >
                                 {option.description}
@@ -173,21 +195,52 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
 
               <div className="mt-6 flex space-x-3">
                 <button
-                  onClick={onClose}
-                  className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                  onClick={handleClose}
+                  className="flex-1 px-4 py-2 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 bg-transparent"
                 >
                   Back
                 </button>
                 <button
                   onClick={handleExport}
                   disabled={!exportController || !isLoaded}
-                  className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                  className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed border-2 border-blue-600 hover:border-blue-700 disabled:border-gray-400"
                 >
                   Export
                 </button>
               </div>
-            </>
-          )}
+            </div>
+
+            {/* Export progress */}
+            <div
+              className={`absolute inset-0 transition-all duration-300 ${
+                isExporting ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'
+              }`}
+            >
+              <div className="h-full flex flex-col justify-center space-y-4">
+                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
+                  <div
+                    className="bg-blue-600 h-2.5 rounded-full transition-all duration-300"
+                    style={{ width: `${progress * 100}%` }}
+                  />
+                </div>
+                <p className="text-sm text-gray-600 dark:text-gray-300 text-center">
+                  Exporting video... {Math.round(progress * 100)}%
+                </p>
+                <button
+                  onClick={() => {
+                    if (exportController) {
+                      exportController.cancelExport();
+                    }
+                    setIsExporting(false);
+                    setProgress(0);
+                  }}
+                  className="mt-4 w-full px-4 py-2 border-2 border-red-500 dark:border-red-500 text-red-500 dark:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 bg-transparent transition-colors duration-200"
+                >
+                  Cancel Export
+                </button>
+              </div>
+            </div>
+          </div>
         </Dialog.Panel>
       </div>
     </Dialog>

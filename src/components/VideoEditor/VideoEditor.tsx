@@ -15,6 +15,7 @@ const VideoEditor: React.FC<VideoEditorProps> = ({ videoFile, onBack }) => {
   const [duration, setDuration] = useState(0);
   const [cutStart, setCutStart] = useState(0);
   const [cutEnd, setCutEnd] = useState(0);
+  const [isMuted, setIsMuted] = useState(false);
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
   const [overlayDimensions, setOverlayDimensions] = useState({ width: 0, height: 0 });
   const [videoTransform, setVideoTransform] = useState({ x: 0, y: 0, scale: 0 });
@@ -49,6 +50,13 @@ const VideoEditor: React.FC<VideoEditorProps> = ({ videoFile, onBack }) => {
     }
   }, [duration, cutEnd]);
 
+  // S'assurer que la vidéo de fond est toujours muette
+  useEffect(() => {
+    if (backgroundVideoRef.current) {
+      backgroundVideoRef.current.muted = true;
+    }
+  }, []);
+
   const handleTransformChange = useCallback((transform: { x: number; y: number; scale: number }) => {
     setVideoTransform(transform);
   }, []);
@@ -56,6 +64,13 @@ const VideoEditor: React.FC<VideoEditorProps> = ({ videoFile, onBack }) => {
   const handleExportDialogOpen = useCallback((open: boolean) => {
     setIsExportDialogOpen(open);
   }, []);
+
+  const handleMuteToggle = useCallback(() => {
+    if (videoRef.current) {
+      videoRef.current.muted = !isMuted;
+      setIsMuted(!isMuted);
+    }
+  }, [isMuted]);
 
   const handleVideoRef = (element: HTMLVideoElement | null) => {
     videoRef.current = element;
@@ -89,8 +104,10 @@ const VideoEditor: React.FC<VideoEditorProps> = ({ videoFile, onBack }) => {
               currentTime={currentTime}
               duration={duration}
               isPlaying={isPlaying}
+              isMuted={isMuted}
               onTimeUpdate={setCurrentTime}
               onTogglePlay={() => setIsPlaying(!isPlaying)}
+              onToggleMute={handleMuteToggle}
               cutStart={cutStart}
               cutEnd={cutEnd}
               onCutStartChange={setCutStart}

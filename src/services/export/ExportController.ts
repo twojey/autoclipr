@@ -20,6 +20,8 @@ export class ExportController {
   private frameRenderer: FrameRenderer | null = null;
   private overlayDimensions: { width: number; height: number };
   private videoTransform: { x: number; y: number; scale: number };
+  private isCancelled: boolean = false;
+  private currentAbortController: AbortController | null = null;
 
   private constructor() {
     this.overlayDimensions = { width: 0, height: 0 };
@@ -281,6 +283,14 @@ export class ExportController {
     return Promise.resolve(30);
   }
 
+  public cancelExport() {
+    this.isCancelled = true;
+    if (this.currentAbortController) {
+      this.currentAbortController.abort();
+      this.currentAbortController = null;
+    }
+  }
+
   public async exportVideo(
     video: HTMLVideoElement,
     backgroundVideo: HTMLVideoElement | null,
@@ -290,6 +300,9 @@ export class ExportController {
       throw new Error('FFmpeg or FrameRenderer not initialized');
     }
 
+    this.isCancelled = false;
+    this.currentAbortController = new AbortController();
+    
     const { startTime, endTime, onProgress } = options;
     const duration = endTime - startTime;
     const fps = await this.getVideoFPS(video);
@@ -297,21 +310,16 @@ export class ExportController {
     const outputFile = 'output.mp4';
     let audioFile: string | null = null;
 
-    console.log(`Starting export: ${duration}s at ${fps}fps (${totalFrames} frames)`);
-    console.log(`Time range: ${startTime}s to ${endTime}s`);
-    
     try {
       // 1. Extraire l'audio
       console.log('Extracting audio...');
       audioFile = await this.extractAudio(video, startTime, endTime);
-      if (audioFile) {
-        console.log('Audio extracted successfully');
-      } else {
-        console.log('No audio to extract or extraction failed');
-      }
+      if (this.isCancelled) throw new Error('Export cancelled');
 
       // 2. Générer toutes les frames
       for (let frameIndex = 0; frameIndex < totalFrames; frameIndex++) {
+        if (this.isCancelled) throw new Error('Export cancelled');
+        
         const time = startTime + (frameIndex / fps);
         console.log(`Processing frame ${frameIndex + 1}/${totalFrames} at ${time.toFixed(3)}s`);
         
@@ -319,37 +327,44 @@ export class ExportController {
         onProgress?.((frameIndex + 1) / totalFrames);
       }
 
+      if (this.isCancelled) throw new Error('Export cancelled');
+
       // 3. Encoder la vidéo complète avec l'audio
       console.log('Encoding video...');
       await this.encodeVideo(0, totalFrames, fps, outputFile, audioFile);
+
+      if (this.isCancelled) throw new Error('Export cancelled');
 
       // 4. Lire le fichier de sortie
       console.log('Reading output file...');
       const data = await this.ffmpeg.readFile(outputFile);
       
       // 5. Nettoyer
-      console.log('Cleaning up...');
+      await this.cleanup(totalFrames, outputFile, audioFile);
+      
+      console.log('Export complete!');
+      this.currentAbortController = null;
+      return new Blob([data], { type: 'video/mp4' });
+    } catch (error) {
+      console.error('Export error:', error);
+      // Nettoyer en cas d'erreur
+      await this.cleanup(totalFrames, outputFile, audioFile);
+      this.currentAbortController = null;
+      throw error;
+    }
+  }
+
+  private async cleanup(totalFrames: number, outputFile: string, audioFile: string | null) {
+    if (!this.ffmpeg) return;
+
+    try {
       await this.cleanupFrames(0, totalFrames);
       await this.ffmpeg.deleteFile(outputFile);
       if (audioFile) {
         await this.ffmpeg.deleteFile(audioFile);
       }
-      
-      console.log('Export complete!');
-      return new Blob([data], { type: 'video/mp4' });
-    } catch (error) {
-      console.error('Export error:', error);
-      // Tenter de nettoyer en cas d'erreur
-      try {
-        await this.cleanupFrames(0, totalFrames);
-        await this.ffmpeg.deleteFile(outputFile);
-        if (audioFile) {
-          await this.ffmpeg.deleteFile(audioFile);
-        }
-      } catch (cleanupError) {
-        console.error('Cleanup error:', cleanupError);
-      }
-      throw error;
+    } catch (cleanupError) {
+      console.error('Cleanup error:', cleanupError);
     }
   }
 }

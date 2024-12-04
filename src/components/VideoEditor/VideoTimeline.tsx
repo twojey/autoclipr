@@ -1,5 +1,12 @@
 import React, { useRef, useState, useCallback, useEffect } from 'react';
-import { PlayIcon, PauseIcon, MagnifyingGlassMinusIcon, MagnifyingGlassPlusIcon } from '@heroicons/react/24/solid';
+import { 
+  PlayIcon, 
+  PauseIcon, 
+  MagnifyingGlassMinusIcon, 
+  MagnifyingGlassPlusIcon,
+  SpeakerWaveIcon,
+  SpeakerXMarkIcon
+} from '@heroicons/react/24/solid';
 import { Button } from '../ui/Button';
 
 // Constants
@@ -29,12 +36,14 @@ interface VideoTimelineProps {
   currentTime: number;
   duration: number;
   isPlaying: boolean;
+  isMuted: boolean;
   onTimeUpdate: (time: number) => void;
   onTogglePlay: () => void;
+  onToggleMute: () => void;
   cutStart?: number;
   cutEnd?: number;
-  onCutStartChange: (time: number) => void;
-  onCutEndChange: (time: number) => void;
+  onCutStartChange?: (time: number) => void;
+  onCutEndChange?: (time: number) => void;
 }
 
 // Utility function to format time (seconds -> MM:SS)
@@ -48,8 +57,10 @@ export const VideoTimeline: React.FC<VideoTimelineProps> = ({
   currentTime,
   duration,
   isPlaying,
+  isMuted,
   onTimeUpdate,
   onTogglePlay,
+  onToggleMute,
   cutStart = 0,
   cutEnd = Math.min(INITIAL_CUT_DURATION, duration),
   onCutStartChange,
@@ -228,11 +239,11 @@ export const VideoTimeline: React.FC<VideoTimelineProps> = ({
 
     if (isDraggingHandle === 'start') {
       const newStart = Math.max(0, Math.min(currentTime, cutEnd - MIN_CLIP_DURATION));
-      onCutStartChange(newStart);
+      onCutStartChange?.(newStart);
       onTimeUpdate(newStart);
     } else if (isDraggingHandle === 'end') {
       const newEnd = Math.min(duration, Math.max(currentTime, cutStart + MIN_CLIP_DURATION));
-      onCutEndChange(newEnd);
+      onCutEndChange?.(newEnd);
       if (currentTime <= duration) {
         onTimeUpdate(newEnd);
       }
@@ -278,8 +289,8 @@ export const VideoTimeline: React.FC<VideoTimelineProps> = ({
       newStart = duration - zoneDuration;
     }
 
-    onCutStartChange(newStart);
-    onCutEndChange(newEnd);
+    onCutStartChange?.(newStart);
+    onCutEndChange?.(newEnd);
     onTimeUpdate(newStart);
   }, [isDraggingZone, pixelsToTime, duration, onCutStartChange, onCutEndChange, onTimeUpdate]);
 
@@ -310,8 +321,8 @@ export const VideoTimeline: React.FC<VideoTimelineProps> = ({
     const newStart = Math.max(0, Math.min(clickTime - cutDuration / 2, duration - cutDuration));
     const newEnd = newStart + cutDuration;
     
-    onCutStartChange(newStart);
-    onCutEndChange(newEnd);
+    onCutStartChange?.(newStart);
+    onCutEndChange?.(newEnd);
     onTimeUpdate(newStart);
   }, [isDraggingHandle, isDraggingZone, isDraggingScroll, pixelsToTime, cutStart, cutEnd, duration, onCutStartChange, onCutEndChange, onTimeUpdate]);
 
@@ -424,6 +435,11 @@ export const VideoTimeline: React.FC<VideoTimelineProps> = ({
     return Math.max(0, Math.min(rawPosition, maxPosition));
   }, [scrollPosition, getMaxScroll, scrollbarWidth]);
 
+  // Gestionnaire pour le bouton mute/unmute
+  const handleMuteToggle = useCallback(() => {
+    onToggleMute();
+  }, [onToggleMute]);
+
   return (
     <div ref={containerRef} className="flex flex-col w-full gap-2 p-4 bg-white/20 dark:bg-black/20 backdrop-blur-sm rounded-lg border border-white/10 dark:border-white/5">
       <div className="flex items-center justify-between">
@@ -438,6 +454,18 @@ export const VideoTimeline: React.FC<VideoTimelineProps> = ({
               <PauseIcon className="w-4 h-4" />
             ) : (
               <PlayIcon className="w-4 h-4" />
+            )}
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleMuteToggle}
+            aria-label={isMuted ? 'Unmute' : 'Mute'}
+          >
+            {isMuted ? (
+              <SpeakerXMarkIcon className="w-4 h-4" />
+            ) : (
+              <SpeakerWaveIcon className="w-4 h-4" />
             )}
           </Button>
           <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
