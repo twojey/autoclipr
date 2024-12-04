@@ -1,12 +1,14 @@
 import { FFmpeg } from '@ffmpeg/ffmpeg';
 import { toBlobURL } from '@ffmpeg/util';
 import { FrameRenderer } from './FrameRenderer';
+import { ExportProgress, ExportPhase } from '../../types/export';
+import { FFmpegProgress } from '../../types/ffmpeg';
 
 interface ExportOptions {
   startTime: number;
   endTime: number;
   fps?: number;
-  onProgress?: (progress: number) => void;
+  onProgress?: (progress: ExportProgress) => void;
 }
 
 interface MozVideoElement extends HTMLVideoElement {
@@ -87,7 +89,9 @@ export class ExportController {
     video: HTMLVideoElement,
     backgroundVideo: HTMLVideoElement | null,
     time: number,
-    frameNumber: number
+    frameNumber: number,
+    totalFrames: number,
+    onProgress?: (progress: ExportProgress) => void
   ): Promise<void> {
     if (!this.frameRenderer || !this.ffmpeg) {
       throw new Error('FrameRenderer or FFmpeg not initialized.');
@@ -104,6 +108,13 @@ export class ExportController {
       const frameData = new Uint8Array(await frame.arrayBuffer());
       const filename = `frame_${frameNumber.toString().padStart(6, '0')}.jpg`;
       await this.ffmpeg.writeFile(filename, frameData);
+      
+      if (onProgress) {
+        onProgress({
+          phase: 'rendering',
+          progress: frameNumber / totalFrames
+        });
+      }
     } catch (error) {
       console.error(`Error processing frame at ${time}s:`, error);
       throw error;
@@ -115,11 +126,14 @@ export class ExportController {
     numFrames: number,
     fps: number,
     outputFile: string,
-    audioFile: string | null = null
+    audioFile: string | null = null,
+    onProgress?: (progress: ExportProgress) => void
   ): Promise<void> {
     if (!this.ffmpeg) throw new Error('FFmpeg not initialized');
 
     const inputFile = 'concat.txt';
+    let totalDuration = numFrames / fps; // Durée totale en secondes
+    let lastProgress = 0;
     
     try {
       // Créer le fichier de concaténation
@@ -130,19 +144,19 @@ export class ExportController {
       
       await this.ffmpeg.writeFile(inputFile, fileList);
 
-      // Préparer la commande FFmpeg de base pour la vidéo
+      // Préparer la commande FFmpeg de base pour la vidéo avec timestamp
       const ffmpegCommand = [
         '-f', 'concat',
         '-safe', '0',
-        '-i', inputFile
+        '-i', inputFile,
+        '-progress', '-',
+        '-nostats'
       ];
 
-      // Ajouter l'entrée audio si disponible
       if (audioFile) {
         ffmpegCommand.push('-i', audioFile);
       }
 
-      // Ajouter les options de sortie
       ffmpegCommand.push(
         '-c:v', 'mpeg4',
         '-q:v', '2',
@@ -150,7 +164,6 @@ export class ExportController {
         '-r', fps.toString()
       );
 
-      // Ajouter les options audio si nécessaire
       if (audioFile) {
         ffmpegCommand.push(
           '-c:a', 'aac',
@@ -160,12 +173,31 @@ export class ExportController {
         );
       }
 
-      // Ajouter le fichier de sortie
       ffmpegCommand.push(outputFile);
 
       console.log('FFmpeg command:', ffmpegCommand.join(' '));
 
-      // Encoder la vidéo
+      // Encoder la vidéo avec surveillance de la progression
+      this.ffmpeg.on('log', (message) => {
+        // Analyser la sortie de FFmpeg pour extraire la progression
+        const timeMatch = message.message.match(/time=(\d+:\d+:\d+.\d+)/);
+        if (timeMatch) {
+          const timeStr = timeMatch[1];
+          const [hours, minutes, seconds] = timeStr.split(':').map(parseFloat);
+          const currentTime = hours * 3600 + minutes * 60 + seconds;
+          const progress = Math.min(currentTime / totalDuration, 1);
+          
+          // Éviter les mises à jour trop fréquentes
+          if (Math.abs(progress - lastProgress) > 0.01) {
+            lastProgress = progress;
+            onProgress?.({
+              phase: 'encoding',
+              progress
+            });
+          }
+        }
+      });
+
       await this.ffmpeg.exec(ffmpegCommand);
 
       // Nettoyer le fichier de concaténation
@@ -323,15 +355,18 @@ export class ExportController {
         const time = startTime + (frameIndex / fps);
         console.log(`Processing frame ${frameIndex + 1}/${totalFrames} at ${time.toFixed(3)}s`);
         
-        await this.processFrame(video, backgroundVideo, time, frameIndex);
-        onProgress?.((frameIndex + 1) / totalFrames);
+        await this.processFrame(video, backgroundVideo, time, frameIndex, totalFrames, onProgress);
+        onProgress?.({
+          phase: 'rendering',
+          progress: (frameIndex + 1) / totalFrames
+        });
       }
 
       if (this.isCancelled) throw new Error('Export cancelled');
 
       // 3. Encoder la vidéo complète avec l'audio
       console.log('Encoding video...');
-      await this.encodeVideo(0, totalFrames, fps, outputFile, audioFile);
+      await this.encodeVideo(0, totalFrames, fps, outputFile, audioFile, onProgress);
 
       if (this.isCancelled) throw new Error('Export cancelled');
 

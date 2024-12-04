@@ -3,6 +3,7 @@ import { Dialog, RadioGroup } from '@headlessui/react';
 import { ExportController } from '../../services/export/ExportController';
 import { useVideoContext } from '../../contexts/VideoContext';
 import { useFFmpeg } from '../../hooks/useFFmpeg';
+import { ExportProgress, ExportPhase } from '../../types/export';
 
 interface ExportQualityOption {
   id: string;
@@ -39,7 +40,7 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
   startTime = 0,
   endTime,
 }) => {
-  const [progress, setProgress] = useState(0);
+  const [exportProgress, setExportProgress] = useState<ExportProgress>({ phase: 'rendering', progress: 0 });
   const [isExporting, setIsExporting] = useState(false);
   const [selectedQuality, setSelectedQuality] = useState(exportQualityOptions[0]);
   const { duration } = useVideoContext();
@@ -63,7 +64,7 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
     if (!videoRef.current || !exportController || !isLoaded) return;
 
     setIsExporting(true);
-    setProgress(0);
+    setExportProgress({ phase: 'rendering', progress: 0 });
 
     try {
       console.log(`Exporting video from ${startTime}s to ${endTime}s`);
@@ -75,7 +76,7 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
           startTime,
           endTime: typeof endTime === 'number' ? endTime : duration,
           fps: 30,
-          onProgress: (p) => setProgress(p)
+          onProgress: (progress) => setExportProgress(progress)
         }
       );
 
@@ -217,22 +218,57 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
               }`}
             >
               <div className="h-full flex flex-col justify-center space-y-4">
-                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
-                  <div
-                    className="bg-blue-600 h-2.5 rounded-full transition-all duration-300"
-                    style={{ width: `${progress * 100}%` }}
-                  />
+                {/* Progress Circle */}
+                <div className="relative w-32 h-32 mx-auto">
+                  <svg className="w-full h-full transform -rotate-90">
+                    {/* Background circle */}
+                    <circle
+                      className="text-gray-200 dark:text-gray-700"
+                      strokeWidth="8"
+                      stroke="currentColor"
+                      fill="transparent"
+                      r="58"
+                      cx="64"
+                      cy="64"
+                    />
+                    {/* Progress circle */}
+                    <circle
+                      className="text-blue-600 transition-all duration-300"
+                      strokeWidth="8"
+                      strokeLinecap="round"
+                      stroke="currentColor"
+                      fill="transparent"
+                      r="58"
+                      cx="64"
+                      cy="64"
+                      strokeDasharray={`${2 * Math.PI * 58}`}
+                      strokeDashoffset={2 * Math.PI * 58 * (1 - exportProgress.progress)}
+                    />
+                  </svg>
+                  {/* Phase indicator */}
+                  <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+                    <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                      {exportProgress.phase === 'rendering' ? 'Rendering' : 'Encoding'}
+                    </span>
+                    <span className="text-xl font-bold text-gray-900 dark:text-white">
+                      {Math.round(exportProgress.progress * 100)}%
+                    </span>
+                  </div>
                 </div>
+
                 <p className="text-sm text-gray-600 dark:text-gray-300 text-center">
-                  Exporting video... {Math.round(progress * 100)}%
+                  {exportProgress.phase === 'rendering' 
+                    ? 'Rendering frames...' 
+                    : 'Encoding video...'}
                 </p>
+
                 <button
                   onClick={() => {
                     if (exportController) {
                       exportController.cancelExport();
                     }
                     setIsExporting(false);
-                    setProgress(0);
+                    setExportProgress({ phase: 'rendering', progress: 0 });
                   }}
                   className="mt-4 w-full px-4 py-2 border-2 border-red-500 dark:border-red-500 text-red-500 dark:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 bg-transparent transition-colors duration-200"
                 >
