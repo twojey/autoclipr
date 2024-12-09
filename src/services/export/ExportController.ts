@@ -1,8 +1,6 @@
 import { FFmpeg } from '@ffmpeg/ffmpeg';
-import { toBlobURL } from '@ffmpeg/util';
 import { FrameRenderer } from './FrameRenderer';
 import { ExportProgress, ExportPhase } from '../../types/export';
-import { FFmpegProgress } from '../../types/ffmpeg';
 
 interface ExportOptions {
   startTime: number;

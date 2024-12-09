@@ -1,4 +1,4 @@
-import { VideoOverlay, TextLayer, ImageLayer, ShapeLayer, VideoLayer } from '../../types/overlay';
+import { VideoOverlay } from '../../types/overlay';
 
 export interface RenderOptions {
   width: number;      // 1080

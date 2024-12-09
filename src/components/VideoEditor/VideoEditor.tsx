@@ -1,5 +1,4 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { ArrowDownTrayIcon } from '@heroicons/react/24/outline';
 import { VideoCanvas } from './VideoCanvas';
 import { VideoTimeline } from './VideoTimeline';
 import { ExportDialog } from './ExportDialog';
@@ -17,7 +16,7 @@ const VideoEditor: React.FC<VideoEditorProps> = ({ videoFile, onBack }) => {
   const [cutEnd, setCutEnd] = useState(0);
   const [isMuted, setIsMuted] = useState(false);
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
-  const [overlayDimensions, setOverlayDimensions] = useState({ width: 0, height: 0 });
+  const [overlayDimensions] = useState({ width: 0, height: 0 });
   const [videoTransform, setVideoTransform] = useState({ x: 0, y: 0, scale: 0 });
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const backgroundVideoRef = useRef<HTMLVideoElement | null>(null);

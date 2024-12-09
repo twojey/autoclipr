@@ -7,7 +7,7 @@ import VideoEditor from './components/VideoEditor/VideoEditor';
 import { VideoProvider } from './contexts/VideoContext';
 
 function App() {
-  const { ffmpeg, isLoaded, error } = useFFmpeg();
+  const {} = useFFmpeg();
   const [selectedVideo, setSelectedVideo] = useState<File | null>(null);
 
   const handleLogoClick = () => {

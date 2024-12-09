@@ -3,7 +3,7 @@ import { Dialog, RadioGroup } from '@headlessui/react';
 import { ExportController } from '../../services/export/ExportController';
 import { useVideoContext } from '../../contexts/VideoContext';
 import { useFFmpeg } from '../../hooks/useFFmpeg';
-import { ExportProgress, ExportPhase } from '../../types/export';
+import { ExportProgress } from '../../types/export';
 
 interface ExportQualityOption {
   id: string;

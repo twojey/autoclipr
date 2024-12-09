@@ -11,7 +11,6 @@ import { Button } from '../ui/Button';
 
 // Constants
 const INITIAL_CUT_DURATION = 30; // 30 seconds
-const MAX_DURATION = 120; // 2 minutes
 const MIN_ZOOM = 0.5;
 const MAX_ZOOM = 10; // Augmenté de 4 à 10
 const ZOOM_STEP = 1.2; // Augmenté de 0.5 à 1.2
@@ -300,7 +299,7 @@ export const VideoTimeline: React.FC<VideoTimelineProps> = ({
       if (previousPlayState) onTogglePlay();
       dragStartPos.current = null;
     }
-  }, [isDraggingZone, previousPlayState, onTogglePlay]);
+  }, [isDraggingZone, previousPlayState, onTogglePlay, onTimeUpdate]);
 
   // Handle timeline click
   const handleTimelineClick = useCallback((e: React.MouseEvent) => {

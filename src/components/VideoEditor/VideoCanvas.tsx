@@ -116,10 +116,8 @@ export const VideoCanvas: React.FC<VideoCanvasProps> = ({
 
   // Ajustement initial de la vidéo
   useEffect(() => {
-    if (!videoRef.current || !videoFile) return;
-
+    const video = videoRef.current;
     const handleVideoLoad = () => {
-      const video = videoRef.current;
       const container = containerRef.current;
       
       if (!video || !container || !video.videoWidth || !video.videoHeight) return;
@@ -132,11 +130,9 @@ export const VideoCanvas: React.FC<VideoCanvasProps> = ({
       animate(y, 0, { duration: 0.3 });
     };
 
-    videoRef.current.addEventListener('loadedmetadata', handleVideoLoad);
+    video?.addEventListener('loadedmetadata', handleVideoLoad);
     return () => {
-      if (videoRef.current) {
-        videoRef.current.removeEventListener('loadedmetadata', handleVideoLoad);
-      }
+      video?.removeEventListener('loadedmetadata', handleVideoLoad);
     };
   }, [scale, x, y, videoFile]);
 
