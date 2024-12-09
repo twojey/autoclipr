@@ -1,26 +1,30 @@
 {
   "compilerOptions": {
-    "target": "es5",
+    "target": "es5",  // Conserve la compatibilité avec les navigateurs plus anciens
     "lib": [
-      "dom",
-      "dom.iterable",
-      "esnext"
+      "dom",           // Permet l'accès aux fonctionnalités DOM
+      "dom.iterable",  // Permet l'accès aux objets DOM itérables
+      "esnext"          // Utilisation des dernières fonctionnalités ECMAScript
     ],
-    "allowJs": true,
-    "skipLibCheck": true,
-    "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true,
-    "strict": true,
-    "forceConsistentCasingInFileNames": true,
-    "noFallthroughCasesInSwitch": true,
-    "module": "esnext",
-    "moduleResolution": "node",
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "noEmit": true,
-    "jsx": "react-jsx"
+    "allowJs": true,   // Autorise l'utilisation de fichiers JavaScript
+    "skipLibCheck": true,  // Ignore la vérification des types dans les bibliothèques
+    "esModuleInterop": true,  // Assure la compatibilité des imports avec les modules CommonJS
+    "allowSyntheticDefaultImports": true,  // Permet les imports par défaut des modules CommonJS
+    "strict": true,    // Active les vérifications strictes pour la sécurité des types
+    "forceConsistentCasingInFileNames": true,  // Force la cohérence des majuscules/minuscules dans les chemins de fichiers
+    "noFallthroughCasesInSwitch": true,  // Empêche les cas sans `break` dans les `switch`
+    "module": "esnext",   // Utilise les modules ES modernes
+    "moduleResolution": "node",  // Résolution des modules comme dans Node.js
+    "resolveJsonModule": true,  // Permet l'importation de fichiers JSON comme modules
+    "isolatedModules": true,    // Assure que chaque fichier peut être compilé indépendamment
+    "noEmit": false,  // Permet à TypeScript de générer des fichiers JavaScript
+    "outDir": "./dist",  // Spécifie un répertoire de sortie pour les fichiers générés (évite la collision avec le dossier `src`)
+    "jsx": "react-jsx"   // Utilisation de la nouvelle syntaxe JSX pour React 17+
   },
   "include": [
-    "src"
+    "src"  // Inclut le dossier `src` pour la compilation
+  ],
+  "exclude": [
+    "src/setupProxy.js"  // Exclut explicitement le fichier `setupProxy.js` de la compilation TypeScript
   ]
 }
