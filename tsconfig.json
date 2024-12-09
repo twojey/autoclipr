@@ -6,6 +6,7 @@
       "dom.iterable",  // Permet l'accès aux objets DOM itérables
       "esnext"          // Utilisation des dernières fonctionnalités ECMAScript
     ],
+    "checkJs": true,
     "allowJs": true,   // Autorise l'utilisation de fichiers JavaScript
     "skipLibCheck": true,  // Ignore la vérification des types dans les bibliothèques
     "esModuleInterop": true,  // Assure la compatibilité des imports avec les modules CommonJS

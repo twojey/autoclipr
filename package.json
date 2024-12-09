@@ -59,5 +59,8 @@
     "postcss": "^8.4.49",
     "react-app-rewired": "^2.2.1",
     "tailwindcss": "^3.4.15"
+  },
+  "engines": {
+    "node": "16.x"
   }
 }
