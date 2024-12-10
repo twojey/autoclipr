@@ -17,21 +17,18 @@ const Header: React.FC<HeaderProps> = ({ onLogoClick }) => {
         <div className="flex justify-between items-center h-16">
           {/* Logo et nom */}
           <motion.div 
-            className="flex items-center gap-3"
+            className="flex items-center gap-3 cursor-pointer"
             whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
+            onClick={onLogoClick}
           >
-            <button 
-              onClick={onLogoClick}
-              className="flex items-center gap-3 focus:outline-none"
-            >
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center shadow-lg">
-                <span className="text-white font-bold text-lg">H</span>
-              </div>
-              <span className="text-xl font-bold bg-gradient-to-r from-blue-500 to-purple-500 text-transparent bg-clip-text">
+            <img 
+              src={isDark ? "/heyddit_dark_bg.png" : "/heyddit_white_bg.png"}
+              alt="Heyddit Logo" 
+              className="h-8 w-auto"
+            />
+            <span className="text-xl font-bold bg-gradient-to-r from-blue-500 to-purple-500 text-transparent bg-clip-text">
                 Heyddit
               </span>
-            </button>
           </motion.div>
           
           {/* Boutons de droite */}
@@ -39,7 +36,7 @@ const Header: React.FC<HeaderProps> = ({ onLogoClick }) => {
             <motion.button
               onClick={toggleTheme}
               className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-              aria-label={isDark ? "Passer au thème clair" : "Passer au thème sombre"}
+              aria-label={isDark ? "Switch to light theme" : "Switch to dark theme"}
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
             >

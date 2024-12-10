@@ -472,7 +472,7 @@ export const VideoTimeline: React.FC<VideoTimelineProps> = ({
           </span>
           <div className="h-4 w-px bg-gray-300 dark:bg-gray-600 mx-2" />
           <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
-            Sélection: {formatTime(cutEnd - cutStart)}
+            Selection: {formatTime(cutEnd - cutStart)}
           </span>
         </div>
         <div className="flex items-center gap-2">

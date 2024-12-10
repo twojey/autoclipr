@@ -58,18 +58,18 @@ export const HomePage: React.FC<HomePageProps> = ({ onVideoSelect }) => {
               <div className="space-y-2">
                 <p className="text-xl font-medium">
                   {isDragActive 
-                    ? "Déposez la vidéo ici..."
+                    ? "Drop the video here..."
                     : <span>
-                        Glissez-déposez une vidéo
+                        Drag and drop a video
                         <br />
-                        ou
+                        or
                         <br />
-                        cliquez pour sélectionner
+                        click to select
                       </span>
                   }
                 </p>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Formats supportés: MP4, MOV, AVI, MKV
+                  Supported formats: MP4, MOV, AVI, MKV
                 </p>
               </div>
             </div>

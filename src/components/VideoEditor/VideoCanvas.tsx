@@ -376,44 +376,45 @@ export const VideoCanvas: React.FC<VideoCanvasProps> = ({
         </div>
       </div>
 
-      {/* Barre de contrôle de taille */}
-      <div className="absolute left-8 bottom-4 bg-black/50 rounded-lg backdrop-blur-sm p-2 flex gap-2">
-        <button
-          onClick={handleVerticalFit}
-          className="p-2 rounded hover:bg-white/10 transition-colors"
-          title="Ajuster à la hauteur de l'overlay"
-        >
-          <ArrowsUpDownIcon className="w-6 h-6 text-white" />
-        </button>
-        
-        <button
-          onClick={handleHorizontalFit}
-          className="p-2 rounded hover:bg-white/10 transition-colors"
-          title="Ajuster à la largeur de l'overlay"
-        >
-          <ArrowsRightLeftIcon className="w-6 h-6 text-white" />
-        </button>
+      {/* Size control bar */}
+<div className="absolute left-8 bottom-4 bg-black/50 rounded-lg backdrop-blur-sm p-2 flex gap-2">
+  <button
+    onClick={handleVerticalFit}
+    className="p-2 rounded hover:bg-white/10 transition-colors"
+    title="Fit to overlay height"
+  >
+    <ArrowsUpDownIcon className="w-6 h-6 text-white" />
+  </button>
+  
+  <button
+    onClick={handleHorizontalFit}
+    className="p-2 rounded hover:bg-white/10 transition-colors"
+    title="Fit to overlay width"
+  >
+    <ArrowsRightLeftIcon className="w-6 h-6 text-white" />
+  </button>
 
-        <div className="w-px h-6 bg-white/20 my-2" />
+  <div className="w-px h-6 bg-white/20 my-2" />
 
-        <button
-          onClick={() => handleZoom('in')}
-          className="p-2 rounded hover:bg-white/10 transition-colors relative"
-          title="Zoom +"
-        >
-          <MagnifyingGlassIcon className="w-6 h-6 text-white" />
-          <span className="absolute text-white font-bold text-sm right-1 bottom-1">+</span>
-        </button>
+  <button
+    onClick={() => handleZoom('in')}
+    className="p-2 rounded hover:bg-white/10 transition-colors relative"
+    title="Zoom in"
+  >
+    <MagnifyingGlassIcon className="w-6 h-6 text-white" />
+    <span className="absolute text-white font-bold text-sm right-1 bottom-1">+</span>
+  </button>
 
-        <button
-          onClick={() => handleZoom('out')}
-          className="p-2 rounded hover:bg-white/10 transition-colors relative"
-          title="Zoom -"
-        >
-          <MagnifyingGlassIcon className="w-6 h-6 text-white" />
-          <span className="absolute text-white font-bold text-sm right-1 bottom-1">-</span>
-        </button>
-      </div>
+  <button
+    onClick={() => handleZoom('out')}
+    className="p-2 rounded hover:bg-white/10 transition-colors relative"
+    title="Zoom out"
+  >
+    <MagnifyingGlassIcon className="w-6 h-6 text-white" />
+    <span className="absolute text-white font-bold text-sm right-1 bottom-1">-</span>
+  </button>
+</div>
+
 
       {/* Dialog d'export */}
       <ExportDialog

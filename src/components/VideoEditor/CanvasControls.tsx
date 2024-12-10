@@ -38,28 +38,28 @@ const CanvasControls: React.FC<CanvasControlsProps> = ({
     <div className="absolute bottom-4 left-4 flex gap-2">
       <ControlButton
         onClick={onFitHeight}
-        title="Ajuster à la hauteur"
+        title="Fit to height"
       >
         <ArrowsUpDownIcon className="w-6 h-6" />
       </ControlButton>
 
       <ControlButton
         onClick={onFitWidth}
-        title="Ajuster à la largeur"
+        title="Fit to width"
       >
         <ArrowsRightLeftIcon className="w-6 h-6" />
       </ControlButton>
 
       <ControlButton
         onClick={onZoomIn}
-        title="Zoom avant"
+        title="Zoom in"
       >
         <ArrowsPointingInIcon className="w-6 h-6" />
       </ControlButton>
 
       <ControlButton
         onClick={onZoomOut}
-        title="Zoom arrière"
+        title="Zoom out"
       >
         <ArrowsPointingOutIcon className="w-6 h-6" />
       </ControlButton>

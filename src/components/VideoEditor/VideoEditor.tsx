@@ -21,15 +21,15 @@ const VideoEditor: React.FC<VideoEditorProps> = ({ videoFile, onBack }) => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const backgroundVideoRef = useRef<HTMLVideoElement | null>(null);
 
-  // Gestionnaire de la barre d'espace
+  // Space bar handler
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
-      // Ignorer si l'utilisateur tape dans un champ de texte
+      // Ignore if user is typing in a text field
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
         return;
       }
       
-      // Empêcher le défilement de la page avec la barre d'espace
+      // Prevent page scrolling with spacebar
       if (e.code === 'Space') {
         e.preventDefault();
         setIsPlaying(prev => !prev);
@@ -42,14 +42,14 @@ const VideoEditor: React.FC<VideoEditorProps> = ({ videoFile, onBack }) => {
     };
   }, []);
 
-  // Mettre à jour cutEnd une fois que la durée est connue
+  // Update cutEnd once duration is known
   useEffect(() => {
     if (duration > 0 && cutEnd === 0) {
       setCutEnd(Math.min(30, duration));
     }
   }, [duration, cutEnd]);
 
-  // S'assurer que la vidéo de fond est toujours muette
+  // Ensure background video is always muted
   useEffect(() => {
     if (backgroundVideoRef.current) {
       backgroundVideoRef.current.muted = true;
@@ -79,7 +79,7 @@ const VideoEditor: React.FC<VideoEditorProps> = ({ videoFile, onBack }) => {
     <div className="h-full bg-gradient-to-tl from-gray-100 via-blue-100 to-blue-200 dark:from-gray-950 dark:via-purple-900 dark:to-purple-800 grid place-items-center">
       <div className="w-full max-w-[800px] px-4 flex flex-col -mt-8">
         <div className="w-full rounded-xl backdrop-blur-xl bg-white/40 dark:bg-black/40 border border-white/40 dark:border-white/10 shadow-lg p-4">
-          {/* Aperçu vidéo */}
+          {/* Video preview */}
           <div className="relative aspect-video rounded-lg overflow-hidden bg-black mb-4">
             <VideoCanvas
               videoFile={videoFile}
