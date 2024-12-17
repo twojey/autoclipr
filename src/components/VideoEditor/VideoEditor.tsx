@@ -18,12 +18,12 @@ const VideoEditor: React.FC<VideoEditorProps> = ({ videoFile, onBack }) => {
   const [isMuted, setIsMuted] = useState(false);
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
   
-  // États pour l'extraction audio
+  // États pour l'extraction audio KEEP
   const [isExtracting, setIsExtracting] = useState(false);
   const [extractionProgress, setExtractionProgress] = useState(0);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [extractionError, setExtractionError] = useState<string | null>(null);
-  
+
   const [cutStart, setCutStart] = useState(0);
   const [cutEnd, setCutEnd] = useState(0);
   const [overlayDimensions] = useState({ width: 0, height: 0 });
@@ -85,7 +85,7 @@ const VideoEditor: React.FC<VideoEditorProps> = ({ videoFile, onBack }) => {
     videoRef.current = element;
   };
 
-  // Gestionnaire d'extraction audio
+  // Gestionnaire d'extraction audio KEEP
   const handleExtractAudio = async () => {
     try {
       setIsExtracting(true);
@@ -105,7 +105,7 @@ const VideoEditor: React.FC<VideoEditorProps> = ({ videoFile, onBack }) => {
     }
   };
 
-  // Gestionnaire de téléchargement
+  // Gestionnaire de téléchargement KEEP
   const handleDownloadAudio = () => {
     if (!audioBlob) return;
     
@@ -163,24 +163,8 @@ const VideoEditor: React.FC<VideoEditorProps> = ({ videoFile, onBack }) => {
           </div>
         </div>
 
-        {isExportDialogOpen && (
-          <ExportDialog
-            open={isExportDialogOpen}
-            onClose={() => setIsExportDialogOpen(false)}
-            videoRef={videoRef}
-            backgroundVideoRef={backgroundVideoRef}
-            overlayDimensions={overlayDimensions}
-            videoTransform={videoTransform}
-            startTime={cutStart}
-            endTime={cutEnd}
-          />
-        )}
-      </div>
-      <div className="absolute bottom-4 right-4 flex gap-2">
-        {/* Boutons existants */}
-        
-        {/* Section d'extraction audio */}
-        <div className="flex items-center gap-2">
+        {/* Section des boutons d'extraction audio KEEP */}
+        <div className="absolute bottom-4 right-4 flex gap-2">
           <button
             onClick={handleExtractAudio}
             disabled={isExtracting}
@@ -192,7 +176,7 @@ const VideoEditor: React.FC<VideoEditorProps> = ({ videoFile, onBack }) => {
                 <span>Extraction... {extractionProgress}%</span>
               </>
             ) : (
-              'Extraire l\'audio'
+              'Extraire l\'audio KEEP'
             )}
           </button>
           
@@ -202,7 +186,7 @@ const VideoEditor: React.FC<VideoEditorProps> = ({ videoFile, onBack }) => {
               className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 flex items-center gap-2"
             >
               <span>⬇️</span>
-              <span>Télécharger l'audio</span>
+              <span>Télécharger l'audio KEEP</span>
             </button>
           )}
         </div>
@@ -211,6 +195,19 @@ const VideoEditor: React.FC<VideoEditorProps> = ({ videoFile, onBack }) => {
           <div className="absolute bottom-16 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded-lg">
             {extractionError}
           </div>
+        )}
+
+        {isExportDialogOpen && (
+          <ExportDialog
+            open={isExportDialogOpen}
+            onClose={() => setIsExportDialogOpen(false)}
+            videoRef={videoRef}
+            backgroundVideoRef={backgroundVideoRef}
+            overlayDimensions={overlayDimensions}
+            videoTransform={videoTransform}
+            startTime={cutStart}
+            endTime={cutEnd}
+          />
         )}
       </div>
     </div>
