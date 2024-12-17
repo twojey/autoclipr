@@ -9,6 +9,7 @@ import {
   ArrowDownTrayIcon
 } from '@heroicons/react/24/solid';
 import { ExportDialog } from './ExportDialog';
+import { AudioExtractor, AudioExtractionProgress } from '../../utils/audioExtractor';
 
 interface VideoCanvasProps {
   videoFile: File;
@@ -20,9 +21,9 @@ interface VideoCanvasProps {
   onTimeUpdate: (time: number) => void;
   onDurationChange: (duration: number) => void;
   onTogglePlay: () => void;
-  onVideoRef?: (element: HTMLVideoElement | null) => void;
-  onTransformChange?: (transform: { x: number; y: number; scale: number }) => void;
-  onExportDialogOpen?: (open: boolean) => void;
+  onVideoRef: (element: HTMLVideoElement | null) => void;
+  onTransformChange: (transform: { x: number; y: number; scale: number }) => void;
+  onExportDialogOpen: (open: boolean) => void;
 }
 
 export const VideoCanvas: React.FC<VideoCanvasProps> = ({ 
@@ -49,6 +50,11 @@ export const VideoCanvas: React.FC<VideoCanvasProps> = ({
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
   const videoUrlRef = useRef<string | null>(null);
   const [justDragged, setJustDragged] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
+  const [isExtracting, setIsExtracting] = useState(false);
+  const [audioExtractionProgress, setAudioExtractionProgress] = useState(0);
+  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
+  const [extractionError, setExtractionError] = useState<string | null>(null);
 
   // Position et échelle de la vidéo
   const x = useMotionValue(0);
@@ -183,6 +189,40 @@ export const VideoCanvas: React.FC<VideoCanvasProps> = ({
     });
   }, [x, y, scale, onTransformChange]);
 
+  // Lancer l'extraction audio
+  useEffect(() => {
+    if (videoFile && videoRef.current) {
+      const videoUrl = URL.createObjectURL(videoFile);
+      videoRef.current.src = videoUrl;
+
+      setIsExtracting(true);
+      setExtractionError(null);
+      
+      const extractor = new AudioExtractor();
+      extractor.extractAudio(videoFile, (progress: AudioExtractionProgress) => {
+        setAudioExtractionProgress(progress.progress);
+        if (progress.status === 'error') {
+          setExtractionError('Erreur lors de l\'extraction audio');
+          setIsExtracting(false);
+        }
+      })
+        .then((blob: Blob) => {
+          console.log('Extraction terminée, blob créé:', blob);
+          setAudioBlob(blob);
+          setIsExtracting(false);
+        })
+        .catch((error: Error) => {
+          console.error('Erreur extraction:', error);
+          setExtractionError(error.message);
+          setIsExtracting(false);
+        });
+
+      return () => {
+        URL.revokeObjectURL(videoUrl);
+      };
+    }
+  }, [videoFile]);
+
   // Gestion du zoom
   const handleZoom = useCallback((direction: 'in' | 'out') => {
     const currentScale = scale.get();
@@ -269,6 +309,51 @@ export const VideoCanvas: React.FC<VideoCanvasProps> = ({
     }
   }, [onVideoRef]);
 
+  const handleExtractAudio = async () => {
+    try {
+      setIsExtracting(true);
+      setExtractionError(null);
+      
+      const extractor = new AudioExtractor();
+      extractor.extractAudio(videoFile, (progress: AudioExtractionProgress) => {
+        setAudioExtractionProgress(progress.progress);
+        if (progress.status === 'error') {
+          setExtractionError('Erreur lors de l\'extraction audio');
+        }
+      })
+        .then((blob: Blob) => {
+          console.log('Extraction terminée, blob créé:', blob);
+          setAudioBlob(blob);
+          setIsExtracting(false);
+        })
+        .catch((error: Error) => {
+          console.error('Erreur extraction:', error);
+          setExtractionError(error.message);
+          setIsExtracting(false);
+        });
+        
+    } catch (error) {
+      console.error('Erreur lors de l\'extraction:', error);
+      setExtractionError(error instanceof Error ? error.message : 'Erreur inconnue');
+      setIsExtracting(false);
+    }
+  };
+
+  const handleDownloadAudio = () => {
+    if (!audioBlob) return;
+    
+    const url = URL.createObjectURL(audioBlob);
+    const a = document.createElement('a');
+    const fileName = `${videoFile.name.replace(/\.[^/.]+$/, '')}_audio.webm`;
+    
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div 
       ref={containerRef} 
@@ -337,14 +422,9 @@ export const VideoCanvas: React.FC<VideoCanvasProps> = ({
       )}
 
 
-
-      {/* Bouton d'export en haut à droite */}
+      {/* Bouton d'export */}
       <button
         onClick={() => {
-          if (overlayRef.current) {
-            const { width, height } = overlayRef.current.getBoundingClientRect();
-            setOverlayDimensions({ width, height });
-          }
           setExportDialogOpen(true);
           onExportDialogOpen?.(true);
         }}
@@ -353,6 +433,42 @@ export const VideoCanvas: React.FC<VideoCanvasProps> = ({
         <ArrowDownTrayIcon className="w-5 h-5" />
         <span className="text-sm font-medium">Export</span>
       </button>
+
+      {/* Bouton d'export audio */}
+      <button
+        onClick={handleExtractAudio}
+        disabled={isExtracting}
+        className={`absolute top-4 right-72 px-4 py-2 backdrop-blur-md rounded-lg text-white transition-all duration-300 flex items-center gap-2 border border-white/20 shadow-lg ${
+          isExtracting 
+            ? 'bg-gray-500/70 cursor-not-allowed opacity-50' 
+            : 'bg-blue-500/70 hover:bg-blue-800/80 cursor-pointer'
+        }`}
+      >
+        {isExtracting ? (
+          <>
+            <span className="animate-spin">⏳</span>
+            <span>Extraction... {audioExtractionProgress}%</span>
+          </>
+        ) : (
+          'Extraire l\'audio'
+        )}
+      </button>
+
+      {audioBlob && !isExtracting && (
+        <button
+          onClick={handleDownloadAudio}
+          className="absolute top-4 right-140 px-4 py-2 bg-green-500/70 backdrop-blur-md rounded-lg text-white hover:bg-green-800/80 transition-all duration-300 flex items-center gap-2 border border-white/20 shadow-lg"
+        >
+          <ArrowDownTrayIcon className="w-5 h-5" />
+          <span className="text-sm font-medium">Télécharger l'audio</span>
+        </button>
+      )}
+
+      {extractionError && (
+        <div className="absolute bottom-16 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded-lg">
+          {extractionError}
+        </div>
+      )}
 
       {/* Overlay 9:16 */}
       <div 
@@ -377,44 +493,43 @@ export const VideoCanvas: React.FC<VideoCanvasProps> = ({
       </div>
 
       {/* Size control bar */}
-<div className="absolute left-8 bottom-4 bg-black/50 rounded-lg backdrop-blur-sm p-2 flex gap-2">
-  <button
-    onClick={handleVerticalFit}
-    className="p-2 rounded hover:bg-white/10 transition-colors"
-    title="Fit to overlay height"
-  >
-    <ArrowsUpDownIcon className="w-6 h-6 text-white" />
-  </button>
-  
-  <button
-    onClick={handleHorizontalFit}
-    className="p-2 rounded hover:bg-white/10 transition-colors"
-    title="Fit to overlay width"
-  >
-    <ArrowsRightLeftIcon className="w-6 h-6 text-white" />
-  </button>
+      <div className="absolute left-8 bottom-4 bg-black/50 rounded-lg backdrop-blur-sm p-2 flex gap-2">
+        <button
+          onClick={handleVerticalFit}
+          className="p-2 rounded hover:bg-white/10 transition-colors"
+          title="Fit to overlay height"
+        >
+          <ArrowsUpDownIcon className="w-6 h-6 text-white" />
+        </button>
+        
+        <button
+          onClick={handleHorizontalFit}
+          className="p-2 rounded hover:bg-white/10 transition-colors"
+          title="Fit to overlay width"
+        >
+          <ArrowsRightLeftIcon className="w-6 h-6 text-white" />
+        </button>
 
-  <div className="w-px h-6 bg-white/20 my-2" />
+        <div className="w-px h-6 bg-white/20 my-2" />
 
-  <button
-    onClick={() => handleZoom('in')}
-    className="p-2 rounded hover:bg-white/10 transition-colors relative"
-    title="Zoom in"
-  >
-    <MagnifyingGlassIcon className="w-6 h-6 text-white" />
-    <span className="absolute text-white font-bold text-sm right-1 bottom-1">+</span>
-  </button>
+        <button
+          onClick={() => handleZoom('in')}
+          className="p-2 rounded hover:bg-white/10 transition-colors relative"
+          title="Zoom in"
+        >
+          <MagnifyingGlassIcon className="w-6 h-6 text-white" />
+          <span className="absolute text-white font-bold text-sm right-1 bottom-1">+</span>
+        </button>
 
-  <button
-    onClick={() => handleZoom('out')}
-    className="p-2 rounded hover:bg-white/10 transition-colors relative"
-    title="Zoom out"
-  >
-    <MagnifyingGlassIcon className="w-6 h-6 text-white" />
-    <span className="absolute text-white font-bold text-sm right-1 bottom-1">-</span>
-  </button>
-</div>
-
+        <button
+          onClick={() => handleZoom('out')}
+          className="p-2 rounded hover:bg-white/10 transition-colors relative"
+          title="Zoom out"
+        >
+          <MagnifyingGlassIcon className="w-6 h-6 text-white" />
+          <span className="absolute text-white font-bold text-sm right-1 bottom-1">-</span>
+        </button>
+      </div>
 
       {/* Dialog d'export */}
       <ExportDialog

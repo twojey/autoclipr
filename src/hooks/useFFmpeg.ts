@@ -1,90 +1,91 @@
 import { useEffect, useRef, useState } from 'react';
 import { FFmpeg } from '@ffmpeg/ffmpeg';
-import { toBlobURL } from '@ffmpeg/util';
-
-const logger = {
-  info: (message: string) => console.log(`[FFmpeg] ℹ️ ${message}`),
-  success: (message: string) => console.log(`[FFmpeg] ✅ ${message}`),
-  error: (message: string, error?: any) => console.error(`[FFmpeg] ❌ ${message}`, error || ''),
-  progress: (progress: number) => console.log(`[FFmpeg] 📊 Chargement: ${(progress * 100).toFixed(1)}%`)
-};
+import { fetchFile, toBlobURL } from '@ffmpeg/util';
 
 export const useFFmpeg = () => {
-  const [ffmpegLoaded, setFfmpegLoaded] = useState<boolean | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [ffmpeg, setFFmpeg] = useState<FFmpeg | null>(null);
-  const loadingRef = useRef(false);
+  const [isReady, setIsReady] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
+  const ffmpegRef = useRef(new FFmpeg());
 
   useEffect(() => {
-    const loadFFmpeg = async () => {
-      if (loadingRef.current || ffmpeg) return;
-      loadingRef.current = true;
+    load();
+  }, []);
 
-      try {
-        logger.info('Initialisation de FFmpeg...');
-        const instance = new FFmpeg();
+  const load = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
 
-        instance.on('log', ({ message }) => {
-          logger.info(message);
+      if (!ffmpegRef.current.loaded) {
+        const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.4/dist/umd';
+        await ffmpegRef.current.load({
+          coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
+          wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
         });
-
-        instance.on('progress', ({ progress }) => {
-          logger.progress(progress);
-        });
-
-        // Vérification des fichiers FFmpeg
-        const baseURL = '/ffmpeg';
-        
-        try {
-          const coreResponse = await fetch(`${baseURL}/ffmpeg-core.js`);
-          const wasmResponse = await fetch(`${baseURL}/ffmpeg-core.wasm`);
-
-          if (!coreResponse.ok || !wasmResponse.ok) {
-            throw new Error(`Fichiers FFmpeg inaccessibles (Core: ${coreResponse.status}, WASM: ${wasmResponse.status})`);
-          }
-          logger.success('Fichiers FFmpeg vérifiés avec succès');
-        } catch (error) {
-          logger.error('Fichiers FFmpeg inaccessibles', error);
-          throw error;
-        }
-
-        // Chargement de FFmpeg
-        try {
-          const coreURL = await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript');
-          const wasmURL = await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm');
-
-          await instance.load({
-            coreURL,
-            wasmURL
-          });
-          
-          logger.success('FFmpeg chargé avec succès');
-          setFFmpeg(instance);
-          setFfmpegLoaded(true);
-        } catch (loadError) {
-          logger.error('Échec du chargement de FFmpeg', {
-            type: loadError instanceof Error ? loadError.name : 'Unknown',
-            message: loadError instanceof Error ? loadError.message : String(loadError)
-          });
-          throw loadError;
-        }
-      } catch (err) {
-        logger.error('Erreur fatale', err);
-        setFfmpegLoaded(false);
-        setError(err instanceof Error ? err.message : 'Erreur inattendue lors du chargement de FFmpeg');
       }
-    };
 
-    loadFFmpeg();
+      setIsReady(true);
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error('Failed to load FFmpeg'));
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-    return () => {
-      loadingRef.current = false;
-    };
-  }, [ffmpeg]);
+  const extractAudio = async (
+    videoFile: File,
+    onProgress?: (progress: number) => void
+  ): Promise<Blob> => {
+    if (!isReady) {
+      throw new Error('FFmpeg n\'est pas prêt');
+    }
+
+    const ffmpeg = ffmpegRef.current;
+    const inputFileName = `input-${Date.now()}.mp4`;
+    const outputFileName = `output-${Date.now()}.mp3`;
+
+    try {
+      // Écrire le fichier d'entrée
+      await ffmpeg.writeFile(inputFileName, await fetchFile(videoFile));
+
+      // Configurer le callback de progression
+      ffmpeg.on('progress', ({ progress }) => {
+        if (onProgress) {
+          onProgress(Math.round(progress * 100));
+        }
+      });
+
+      // Extraire l'audio avec des paramètres optimisés
+      await ffmpeg.exec([
+        '-i', inputFileName,
+        '-vn',                // Pas de vidéo
+        '-acodec', 'libmp3lame', // Codec MP3
+        '-q:a', '2',         // Qualité VBR (0 meilleure - 9 pire)
+        '-y',                // Écraser le fichier de sortie
+        outputFileName
+      ]);
+
+      // Lire le fichier de sortie
+      const data = await ffmpeg.readFile(outputFileName);
+      const audioBlob = new Blob([data], { type: 'audio/mp3' });
+
+      // Nettoyer
+      await ffmpeg.deleteFile(inputFileName);
+      await ffmpeg.deleteFile(outputFileName);
+
+      return audioBlob;
+    } catch (error) {
+      console.error('Erreur lors de l\'extraction:', error);
+      throw error;
+    }
+  };
 
   return {
-    ffmpeg,
-    isLoaded: ffmpegLoaded,
-    error
+    ffmpeg: ffmpegRef.current,
+    isReady,
+    isLoading,
+    error,
+    extractAudio
   };
 };

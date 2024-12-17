@@ -44,11 +44,11 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
   const [isExporting, setIsExporting] = useState(false);
   const [selectedQuality, setSelectedQuality] = useState(exportQualityOptions[0]);
   const { duration } = useVideoContext();
-  const { ffmpeg, isLoaded } = useFFmpeg();
+  const { ffmpeg, isReady } = useFFmpeg();
   const [exportController, setExportController] = useState<ExportController | null>(null);
 
   useEffect(() => {
-    if (open && overlayDimensions.width > 0 && overlayDimensions.height > 0 && ffmpeg && isLoaded) {
+    if (open && overlayDimensions.width > 0 && overlayDimensions.height > 0 && ffmpeg && isReady) {
       const controller = ExportController.getInstance();
       controller.setFFmpeg(ffmpeg);
       controller.setOverlayDimensions({
@@ -58,10 +58,10 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
       controller.setVideoTransform(videoTransform);
       setExportController(controller);
     }
-  }, [open, overlayDimensions, videoTransform, ffmpeg, isLoaded, selectedQuality]);
+  }, [open, overlayDimensions, videoTransform, ffmpeg, isReady, selectedQuality]);
 
   const handleExport = useCallback(async () => {
-    if (!videoRef.current || !exportController || !isLoaded) return;
+    if (!videoRef.current || !exportController || !isReady) return;
 
     setIsExporting(true);
     setExportProgress({ phase: 'rendering', progress: 0 });
@@ -103,7 +103,7 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
     } finally {
       setIsExporting(false);
     }
-  }, [videoRef, backgroundVideoRef, duration, exportController, onClose, startTime, endTime, isLoaded]);
+  }, [videoRef, backgroundVideoRef, duration, exportController, onClose, startTime, endTime, isReady]);
 
   // Gestionnaire de fermeture du modal
   const handleClose = useCallback(() => {
@@ -203,7 +203,7 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
                 </button>
                 <button
                   onClick={handleExport}
-                  disabled={!exportController || !isLoaded}
+                  disabled={!exportController || !isReady}
                   className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed border-2 border-blue-600 hover:border-blue-700 disabled:border-gray-400"
                 >
                   Export

@@ -5,7 +5,7 @@
   "dependencies": {
     "@ffmpeg/core": "^0.12.4",
     "@ffmpeg/core-mt": "^0.12.4",
-    "@ffmpeg/ffmpeg": "^0.12.7",
+    "@ffmpeg/ffmpeg": "^0.12.4",
     "@ffmpeg/util": "^0.12.1",
     "@headlessui/react": "^2.2.0",
     "@heroicons/react": "^2.2.0",
@@ -26,6 +26,7 @@
     "react-scripts": "5.0.1",
     "tailwind-merge": "^2.5.5",
     "typescript": "^4.9.5",
+    "vosk-browser": "^0.0.8",
     "web-vitals": "^2.1.4"
   },
   "scripts": {
